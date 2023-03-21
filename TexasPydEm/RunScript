@@ -1,0 +1,23 @@
+#!/usr/bin/env python3
+from UserAgent import UserAgent as UA
+from Player import Player
+from Players.FullyRandomPlayer import FullyRandomPlayer as FRP
+from Players.AlwaysCallPlayer import AlwaysCallPlayer as ACP
+from CLISpecUserAgent import CLISpecUserAgent as CLIUA
+from TexasHoldEmGame import TexasHoldEmGame as Game
+
+game = Game()
+game.addPlayer(Player('Norbert'))
+game.addPlayer(Player('Brigitte'))
+game.addPlayer(Player('Alex'))
+game.addPlayer(Player('Jill'))
+game.addPlayer(Player('P'))
+# game.addPlayer(Player('Daniel'))
+# game.addPlayer(Player('Kaori'))
+# game.addPlayer(Player('Miguel'))
+# game.addPlayer(Player('Warren'))
+# game.addPlayer(Player('Stefanie'))
+
+game.addSpectator(CLIUA('Jim'))
+
+game.runGame()

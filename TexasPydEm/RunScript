@@ -7,11 +7,11 @@ from CLISpecUserAgent import CLISpecUserAgent as CLIUA
 from TexasHoldEmGame import TexasHoldEmGame as Game
 
 game = Game()
-game.addPlayer(Player('Norbert'))
-game.addPlayer(Player('Brigitte'))
-game.addPlayer(Player('Alex'))
-game.addPlayer(Player('Jill'))
-game.addPlayer(Player('P'))
+game.addPlayer(FRP('Norbert'))
+game.addPlayer(FRP('Brigitte'))
+game.addPlayer(FRP('Alex'))
+game.addPlayer(FRP('Jill'))
+game.addPlayer(FRP('P'))
 # game.addPlayer(Player('Daniel'))
 # game.addPlayer(Player('Kaori'))
 # game.addPlayer(Player('Miguel'))
@@ -20,4 +20,7 @@ game.addPlayer(Player('P'))
 
 game.addSpectator(CLIUA('Jim'))
 
-game.runGame()
+wins = game.runGame()
+
+for pl, win in wins.items():
+    print(pl.name+' wins '+str(win))

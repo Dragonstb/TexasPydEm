@@ -79,3 +79,10 @@ class CLISpecUserAgent(UserAgent):
         formatted = reduce(lambda a,b: a+', '+b, cardNames)
         print()
         print( pattern.format( formatted ) )
+
+    def notifyElimination(self, player):
+        pattern = Loc.getString( Loc.PLAYER_ELIMINATED )
+        print( pattern.format( player.name ) )
+
+    def notifyEndOfHand(self):
+        print('----------')

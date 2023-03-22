@@ -109,7 +109,7 @@ def evaluateHand(cards: List[int]) -> Tuple[int]:
         combi = (PAIR, pairVals[0], kickers[0], kickers[1], kickers[2])
 
     else:
-        kickers = [ valIdx for valIdx in range( len(valFreqs) ) if valFreqs[valIdx] > 0]
+        kickers = [ CU.getCardValue(card) for card in cards ]
         kickers.sort(reverse=True)
         combi = (HIGH, kickers[0], kickers[1], kickers[2], kickers[3], kickers[4])
 

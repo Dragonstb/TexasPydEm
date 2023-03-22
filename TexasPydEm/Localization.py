@@ -40,6 +40,8 @@ COMMUNITY_CARDS = 'community_cards'
 PLAYER_CALLS = 'player_calls'
 # player bets
 PLAYER_BETS = 'player_bets'
+# player eliminated
+PLAYER_ELIMINATED = 'player_eliminated'
 
 
 
@@ -63,7 +65,8 @@ loc_en_UK = {
     POT_WIN: '{0} wins {1}, a gain of {2}',
     COMMUNITY_CARDS: 'The community cards are {0}',
     PLAYER_CALLS: '{0} calls',
-    PLAYER_BETS: '{0} bets {1}'
+    PLAYER_BETS: '{0} bets {1}',
+    PLAYER_ELIMINATED: '{0} has been eliminated from the table'
 
 }
 

@@ -11,55 +11,73 @@ class UserAgent():
 
 
 
-    # start a game
+    # _______________ start a game _______________
 
     def setPlayers(self, players):
         self.players = players
 
     def announceFirstDealer(self, player):
-        return
+        pass
 
 
 
-    # tell user agent what is going on
+    # _______________ tell user agent what is going on _______________
 
     def notifyBeginOfPlay(self, dealer):
-        return
+        pass
 
     def notifyCardDealing(self, player):
-        return
+        pass
 
     def notifySmallBlind(self, player):
-        return
+        pass
 
     def notifyBigBlind(self, player):
-        return
+        pass
 
     def notifyFolding(seld, player):
-        return
+        pass
 
     def notifyCheck(self, player):
-        return
+        pass
 
     def notifyRaise(self, player):
-        return
+        pass
 
     def notifyCall(self, player):
-        return
+        pass
 
     def notifyLastPenny(self, player):
-        return
+        pass
 
     def notifyAllIn(self, player):
-        return
+        pass
 
     def notifyPotWin(self, player, win: int):
-        return
+        pass
 
     def notifyCommunityCards(self, cards: List[int]):
-        return
+        pass
 
-    # other
+    def notifyShowdown(self):
+        pass
+
+    def notifyElimination(self, player):
+        pass
+
+    def notifyEndOfHand(self):
+        pass
+
+    # _______________ other _______________
+
+    def isHuman(self):
+        """
+        Does this instance represent a human player or any kind of bot?
+
+        returns:
+        True for humans and aliens and super-intelligent, poker-playing cats and alike, and False for bots.
+        """
+        return False
 
     def debug(self):
         print(self.name)

@@ -129,19 +129,45 @@ class TexasHoldEmGame():
             [ua.notifyRaise(player) for ua in self.uas]
 
 
-    def allIn(self, player: Player):
+    def addToPot(self, players: List[Player], bet: int):
+        """
+        Adds the given players to the (side) pot created at the given value of 'bet'. If no such pot exists, a new pot
+        becomes opened for the players.
+
+        players:
+        List of players to be added as eligible for winning the pot.
+
+        bet:
+        Betting level for the pot.
+        """
         # look for an already existing pot that has been formed at this betting valuee
-        alreadyAside = list( filter(lambda pot:pot.bet == player.bet), self.pots )
+        alreadyAside = list( filter(lambda pot:pot.bet == bet, self.pots) )
         if len( alreadyAside ) == 0:
             # open new side pot
-            split = Pot( player.bet )
-            split.bet = player.bet
-            split.eligible = [player]
+            sidePot = Pot( bet )
+            sidePot.eligible = copy( players ) # the original list might be used elsewhere, so just a copy here
+            self.pots.append( sidePot )
         else:
             # join the existing pot
             # there can't be more than one side pot with the same value of bet as player has due
             #     to the way we construct new pots
-            alreadyAside[0].eligible.append(player)
+            alreadyAside[0].eligible += players
+
+
+    def allIn(self, player: Player):
+        # # look for an already existing pot that has been formed at this betting valuee
+        # alreadyAside = list( filter(lambda pot:pot.bet == player.bet), self.pots )
+        # if len( alreadyAside ) == 0:
+        #     # open new side pot
+        #     split = Pot( player.bet )
+        #     split.bet = player.bet
+        #     split.eligible = [player]
+        # else:
+        #     # join the existing pot
+        #     # there can't be more than one side pot with the same value of bet as player has due
+        #     #     to the way we construct new pots
+        #     alreadyAside[0].eligible.append(player)
+        self.addToPot([player], player.bet)
         [ua.notifyAllIn(player) for ua in self.uas]
 
 
@@ -180,7 +206,7 @@ class TexasHoldEmGame():
     def getBestHandOwner(self, comps: List[Player]) -> List[Player]:
         if len( comps ) < 1:
             raise ValueError('determining best hand of anybody') # TODO: localize
-        elif len(comps ) > 1:
+        elif len( comps ) > 1:
             lead = [ comps[0] ]
             leadHand = HE.evaluateHand( self.allSevenCards( lead[0] ) )
             others = comps[ 1 : len(comps) ]
@@ -220,12 +246,16 @@ class TexasHoldEmGame():
 
 
     def evaluatePots(self) -> Dict[Player, int]:
-        lastPot = Pot( self.curBet )
-        lastPot.eligible = self.getActivePlayers()
-        self.pots.insert(0, lastPot)
+        self.addToPot( self.getActivePlayers(), self.curBet)
         self.pots.sort(key=lambda pot:pot.bet, reverse=True) # pots on decreasing order of betting value
         self.pots.append( Pot(0) ) # a pivot pot at a betting value of 0, placed at the end of the list
-        wins = {} # takes up a map player -> wins
+        wins = {} # takes up a dict "player: win"
+
+        # missing community cards if more than one player wanna cash in
+        if len( self.pots ) > 1 or len( self.pots[0].eligible ) > 1:
+            if len( self.comCards ) < 5:
+                self.dealCommunityCards( 5 - len(self.comCards) )
+                sleep(0.5)
 
         for idx in range( len(self.pots) - 1 ): # for all pots except pivot pot
             pot = self.pots[ idx ]
@@ -263,18 +293,6 @@ class TexasHoldEmGame():
 
     def playAction(self, player: Player):
         minRaise = self.curBet + self.bb
-        # onTop = player.demandBet( self.curBet , minRaise )
-        # if onTop < 0:
-        #     self.fold( player )
-        # else:
-        #     onTop = min(player.stack, onTop)
-        #     if onTop + player.bet < minRaise:
-        #         onTop = max(self.curBet-player.bet, onTop)
-        #     if onTop == 0:
-        #         self.check( player )
-        #     else:
-        #         player.incBet(onTop)
-        #         self.checkBilance( player, True )
 
         playersBet = player.demandBet( self.curBet , minRaise )
         if playersBet < 0:
@@ -331,6 +349,7 @@ class TexasHoldEmGame():
 
     def playAHand(self):
         # reset everything
+        self.croupier.restoreDeck()
         self.curBet = 0
         self.comCards = []
         self.pots = []
@@ -345,38 +364,28 @@ class TexasHoldEmGame():
         # first interval
         self.firstInterval()
         if len( self.getActivePlayers() ) == 1:
-            wins = self.evaluatePots()
-            self.announceWins( wins )
-            return
+            return self.evaluatePots()
 
         # flop and second interval
         self.dealCommunityCards(3)
         self.playFurtherInterval()
         if len( self.getActivePlayers() ) == 1:
-            wins = self.evaluatePots()
-            self.announceWins( wins )
-            return
+            return self.evaluatePots()
 
         # turn and third interval
         self.dealCommunityCards(1)
         self.playFurtherInterval()
         if len( self.getActivePlayers() ) == 1:
-            wins = self.evaluatePots()
-            self.announceWins( wins )
-            return
+            return self.evaluatePots()
 
         # river and fourth interval
         self.dealCommunityCards(1)
         self.playFurtherInterval()
         if len( self.getActivePlayers() ) == 1:
-            wins = self.evaluatePots()
-            self.announceWins( wins )
-            return
+            return self.evaluatePots()
 
         # showdown
-        print('--- showdown ---')
-        wins = self.evaluatePots()
-        self.announceWins( wins )
+        return self.evaluatePots()
 
 
     def runGame(self):
@@ -393,14 +402,38 @@ class TexasHoldEmGame():
         self.dealIdx = self.findFirstDealer()
         [ua.announceFirstDealer(self.players[self.dealIdx]) for ua in self.uas]
 
-        [pl.clearAll() for pl in self.players]
-        self.playAHand()
-        print()
-        print('--- end of preview ---')
+        # game loop
+        while len( self.players ) > 2:
+            wins = self.playAHand()
+            self.announceWins( wins )
+            for pl, win in wins.items():
+                pl.stack += win
+
+            # eliminate players
+            out = list( filter(lambda pl:pl.stack == 0, self.players) )
+            for pl in out:
+                # remove from players, take care of dealIdx
+                plIdx = self.players.index( pl )
+                if self.dealIdx >= plIdx:
+                    self.dealIdx -= 1
+                del self.players[plIdx]
+                [ ua.notifyElimination(pl) for ua in self.uas ]
+                # players alive become spectators
+                if pl.isHuman():
+                    self.addSpectator( pl )
+                else:
+                    self.uas.remove( pl )
+
+            # shift dealer
+            self.dealIdx = (self.dealIdx + 1) % len( self.players )
+            [ ua.notifyEndOfHand() for ua in self.uas ]
+
+        # return winners
+        return { pl: pl.stack for pl in self.players }
 
 
 
-    # all time
+    # _______________ any time _______________
 
     def addSpectator(self, spec):
         if not isinstance(spec, UA):

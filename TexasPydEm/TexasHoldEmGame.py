@@ -23,10 +23,11 @@ class TexasHoldEmGame():
     startStack: int       # stack size at begin
     dealIdx: int          # index of current dealer in list self.players
     playIdx: int          # index of player in action in list self.players
-    raiser: int           # layer has raised last
+    raiser: int           # player has raised last - DEPRECATED (unused)
     curBet: int           # current height of bet
     comCards: List[int]   # community cards
     pots: List[Pot]       # pot and split pots
+    lastToBeAsked: Player # player last to be asked for action DEPRECATED (unused)
 
     def __init__(self):
         self.state = self.PRE_GAME
@@ -63,39 +64,50 @@ class TexasHoldEmGame():
 
 
     def getActivePlayers(self) -> List[Player]:
-        activePlayers = list( filter(lambda pl: pl.active, self.players) )
+        activePlayers = list( filter(lambda pl: pl.isActive(), self.players) )
         return activePlayers
 
 
-    def getActiveLeftToDealer(self) -> Player:
+    def getEligiblePlayers(self) -> List[Player]:
+        return list( filter(lambda pl: pl.isEligible(), self.players) )
+
+
+    def getActiveRightToDealer(self) -> Player:
         """
-        Gets the next active player left to the dealer.
+        Gets the next active player right to the dealer, or the dealer if this one is still active.
 
         return:
-        First active player left to the dealer. This can be the dealer.
+        First active player right to the dealer. This can also be the dealer.
 
         raises:
         RuntimeError when no player is active.
         """
         for idx in range( len( self.players ) ):
-            pl = self.players[ (self.dealIdx + 1 + idx) % len( self.players ) ]
-            if pl.active:
+            pl = self.players[ (self.dealIdx + 1 - idx) % len( self.players ) ]
+            if pl.isActive():
                 return pl
         raise RuntimeError('no active players')
 
 
     def shiftPlayIndex(self, oldIdx: int) -> Player:
         self.playIdx = (oldIdx + 1) % len( self.players )
-        while not self.players[ self.playIdx ].active:
+        while not self.players[ self.playIdx ].isActive():
             # print('  dbg: playIdx: '+str(self.playIdx)+', oldIdx: '+str(oldIdx))
             self.playIdx = (self.playIdx + 1) % len( self.players )
             if self.playIdx == oldIdx:
-                raise RuntimeError("No active players")
+                if self.players[ self.playIdx ].isActive():
+                    break
+                else:
+                    return None
         return self.players[ self.playIdx ]
 
 
-    def deactivatePlayer(self, player: Player):
+    def deactivatePlayer(self, player: Player, eligible: bool):
         player.active = False
+        if eligible:
+            player.setEligibleOnly()
+        else:
+            player.setInactive()
 
 
     def findFirstDealer(self) -> int:
@@ -113,7 +125,7 @@ class TexasHoldEmGame():
 
 
     def fold(self, player: Player):
-        self.deactivatePlayer(player)
+        player.setInactive()
         [ua.notifyFolding(player) for ua in self.uas]
 
 
@@ -155,18 +167,6 @@ class TexasHoldEmGame():
 
 
     def allIn(self, player: Player):
-        # # look for an already existing pot that has been formed at this betting valuee
-        # alreadyAside = list( filter(lambda pot:pot.bet == player.bet), self.pots )
-        # if len( alreadyAside ) == 0:
-        #     # open new side pot
-        #     split = Pot( player.bet )
-        #     split.bet = player.bet
-        #     split.eligible = [player]
-        # else:
-        #     # join the existing pot
-        #     # there can't be more than one side pot with the same value of bet as player has due
-        #     #     to the way we construct new pots
-        #     alreadyAside[0].eligible.append(player)
         self.addToPot([player], player.bet)
         [ua.notifyAllIn(player) for ua in self.uas]
 
@@ -251,6 +251,7 @@ class TexasHoldEmGame():
         self.pots.append( Pot(0) ) # a pivot pot at a betting value of 0, placed at the end of the list
         wins = {} # takes up a dict "player: win"
 
+        # TODO: All 5 com cards are revealed even if there is only one player left
         # missing community cards if more than one player wanna cash in
         if len( self.pots ) > 1 or len( self.pots[0].eligible ) > 1:
             if len( self.comCards ) < 5:
@@ -288,7 +289,7 @@ class TexasHoldEmGame():
 
         if player.stack == 0:
             self.allIn(player)
-            self.deactivatePlayer(player)
+            player.setEligibleOnly()
 
 
     def playAction(self, player: Player):
@@ -307,18 +308,36 @@ class TexasHoldEmGame():
                 self.check( player )
             else:
                 player.incBet( playersBet - player.bet )
-                self.checkBilance( player, True )
+                self.checkBilance( player )
+
+
+    def continueIntervalCondition(self, player: Player) -> bool:
+        """
+        Checks the condition for continuing / ending a betting interval.
+
+        player:
+        Player that will be asked for a reaction by the croupier in case this method return 'True'.
+
+        return:
+        Stop betting?
+        """
+        return player is not None and ( player.bet < self.curBet or not player.hasBeenAsked )
 
 
     def playInterval(self):
         player = self.players[ self.playIdx ]
-        while player is not self.raiser and len(self.getActivePlayers()) > 1:
+        while self.continueIntervalCondition( player ):
+            if not player.hasBeenAsked:
+                player.hasBeenAsked = True  # set flag
             self.playAction(player)
             player = self.shiftPlayIndex( self.playIdx )
             sleep(0.5)
 
 
     def firstInterval(self):
+        for pl in self.getActivePlayers():
+            pl.hasBeenAsked = False
+
         # set blinds
         if len( self.players ) > 2:
             player = self.shiftPlayIndex( self.dealIdx )
@@ -336,15 +355,29 @@ class TexasHoldEmGame():
         [spec.notifyBigBlind(player) for spec in self.spectators]
         self.checkBilance( player, False )
 
+        self.lastToBeAsked = player
         self.raiser = None
         self.shiftPlayIndex( self.playIdx )
         self.playInterval()
 
 
     def playFurtherInterval(self):
+        for pl in self.getActivePlayers():
+            pl.hasBeenAsked = False
+        self.lastToBeAsked = self.getActiveRightToDealer()
         self.raiser = None
-        player = self.shiftPlayIndex( self.dealIdx )
+        self.shiftPlayIndex( self.dealIdx )
         self.playInterval()
+
+
+    def needsPlayingAnInterval(self) -> bool:
+        """
+        Checks if an interval needs to be played, or if we just can put the community card on the table.
+
+        return:
+        Is playing the betting interval required?
+        """
+        return len( self.getActivePlayers() ) > 1
 
 
     def playAHand(self):
@@ -356,35 +389,45 @@ class TexasHoldEmGame():
         [pl.clearAll() for pl in self.players]
         [ua.notifyBeginOfPlay(self.players[self.dealIdx]) for ua in self.uas]
 
+        # pockets
         self.dealPocketCards()
-        # tell spectators everyones' hand
         for pl in self.players:
             [spec.notifyCardDealing(pl) for spec in self.spectators]
+        sleep(0.5)
 
+        # TODO: all wrong if you have only all in and folded players (i.e. no active players left)
         # first interval
         self.firstInterval()
-        if len( self.getActivePlayers() ) == 1:
+        if len( self.getEligiblePlayers() ) == 1:
             return self.evaluatePots()
 
         # flop and second interval
         self.dealCommunityCards(3)
-        self.playFurtherInterval()
-        if len( self.getActivePlayers() ) == 1:
+        sleep(0.5)
+        if self.needsPlayingAnInterval():
+            self.playFurtherInterval()
+        if len( self.getEligiblePlayers() ) == 1:
             return self.evaluatePots()
 
         # turn and third interval
         self.dealCommunityCards(1)
-        self.playFurtherInterval()
-        if len( self.getActivePlayers() ) == 1:
+        sleep(0.5)
+        if self.needsPlayingAnInterval():
+            self.playFurtherInterval()
+        if len( self.getEligiblePlayers() ) == 1:
             return self.evaluatePots()
 
         # river and fourth interval
         self.dealCommunityCards(1)
-        self.playFurtherInterval()
-        if len( self.getActivePlayers() ) == 1:
+        sleep(0.5)
+        if self.needsPlayingAnInterval():
+            self.playFurtherInterval()
+        if len( self.getEligiblePlayers() ) == 1:
             return self.evaluatePots()
 
         # showdown
+        # TODO: reveal cards to other players
+        # TODO: allow for folding at this point
         return self.evaluatePots()
 
 
@@ -408,6 +451,7 @@ class TexasHoldEmGame():
             self.announceWins( wins )
             for pl, win in wins.items():
                 pl.stack += win
+            sleep(0.5)
 
             # eliminate players
             out = list( filter(lambda pl:pl.stack == 0, self.players) )
@@ -427,6 +471,7 @@ class TexasHoldEmGame():
             # shift dealer
             self.dealIdx = (self.dealIdx + 1) % len( self.players )
             [ ua.notifyEndOfHand() for ua in self.uas ]
+            sleep(0.5)
 
         # return winners
         return { pl: pl.stack for pl in self.players }

@@ -19,7 +19,7 @@ class FullyRandomPlayer(Player):
         dice = randint( 0, len(opts)-1 )
         opt = opts[ dice ]
         if opt == FullyRandomPlayer.RAISE:
-            dice = randint(minRaiseValue, round( 1.05 * (self.stack + self.bet) ))
+            dice = randint(minRaiseValue, round( 1.025 * (self.stack + self.bet) ))
             return dice
         elif opt == FullyRandomPlayer.CHECK:
             return demand

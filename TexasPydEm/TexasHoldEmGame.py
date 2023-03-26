@@ -10,13 +10,14 @@ from copy import copy
 from Pot import Pot
 import HandEvaluator as HE
 
+
 class TexasHoldEmGame():
 
     PRE_GAME = 0
     IN_GAME = 1
     __MAX_PLAYERS = 10
 
-    players: List[Player] # the competing players
+    players: List[Player]  # the competing players
     spectators: List[UA]  # a throng of allknowing spectators
     sb: int               # current small blind
     bb: int               # current big blind
@@ -27,7 +28,8 @@ class TexasHoldEmGame():
     curBet: int           # current height of bet
     comCards: List[int]   # community cards
     pots: List[Pot]       # pot and split pots
-    lastToBeAsked: Player # player last to be asked for action DEPRECATED (unused)
+    # player last to be asked for action DEPRECATED (unused)
+    lastToBeAsked: Player
 
     def __init__(self):
         self.state = self.PRE_GAME
@@ -37,8 +39,6 @@ class TexasHoldEmGame():
         self.sb = 250
         self.bb = 2*self.sb
         self.startStack = 20*self.bb
-
-
 
     # _______________ pre game _______________
 
@@ -58,19 +58,14 @@ class TexasHoldEmGame():
         pos = randint(0, len(self.players))
         self.players.insert(pos, player)
 
-
-
     # _______________ in game _______________
 
-
     def getActivePlayers(self) -> List[Player]:
-        activePlayers = list( filter(lambda pl: pl.isActive(), self.players) )
+        activePlayers = list(filter(lambda pl: pl.isActive(), self.players))
         return activePlayers
 
-
     def getEligiblePlayers(self) -> List[Player]:
-        return list( filter(lambda pl: pl.isEligible(), self.players) )
-
+        return list(filter(lambda pl: pl.isEligible(), self.players))
 
     def getActiveRightToDealer(self) -> Player:
         """
@@ -82,25 +77,23 @@ class TexasHoldEmGame():
         raises:
         RuntimeError when no player is active.
         """
-        for idx in range( len( self.players ) ):
-            pl = self.players[ (self.dealIdx + 1 - idx) % len( self.players ) ]
+        for idx in range(len(self.players)):
+            pl = self.players[(self.dealIdx + 1 - idx) % len(self.players)]
             if pl.isActive():
                 return pl
         raise RuntimeError('no active players')
 
-
     def shiftPlayIndex(self, oldIdx: int) -> Player:
-        self.playIdx = (oldIdx + 1) % len( self.players )
-        while not self.players[ self.playIdx ].isActive():
+        self.playIdx = (oldIdx + 1) % len(self.players)
+        while not self.players[self.playIdx].isActive():
             # print('  dbg: playIdx: '+str(self.playIdx)+', oldIdx: '+str(oldIdx))
-            self.playIdx = (self.playIdx + 1) % len( self.players )
+            self.playIdx = (self.playIdx + 1) % len(self.players)
             if self.playIdx == oldIdx:
-                if self.players[ self.playIdx ].isActive():
+                if self.players[self.playIdx].isActive():
                     break
                 else:
                     return None
-        return self.players[ self.playIdx ]
-
+        return self.players[self.playIdx]
 
     def deactivatePlayer(self, player: Player, eligible: bool):
         player.active = False
@@ -108,7 +101,6 @@ class TexasHoldEmGame():
             player.setEligibleOnly()
         else:
             player.setInactive()
-
 
     def findFirstDealer(self) -> int:
         highCard = -1
@@ -123,23 +115,19 @@ class TexasHoldEmGame():
             [ua.notifyCardDealing(pl) for ua in self.uas]
         return self.players.index(highPlayer)
 
-
     def fold(self, player: Player):
         player.setInactive()
         [ua.notifyFolding(player) for ua in self.uas]
 
-
-    def check(self, player: Player, verbose: bool=True):
+    def check(self, player: Player, verbose: bool = True):
         if verbose:
             [ua.notifyCheck(player) for ua in self.uas]
 
-
-    def raiseBet(self, player: Player, verbose: bool=True):
+    def raiseBet(self, player: Player, verbose: bool = True):
         self.raiser = player
         self.curBet = player.bet
         if verbose:
             [ua.notifyRaise(player) for ua in self.uas]
-
 
     def addToPot(self, players: List[Player], bet: int):
         """
@@ -153,42 +141,38 @@ class TexasHoldEmGame():
         Betting level for the pot.
         """
         # look for an already existing pot that has been formed at this betting valuee
-        alreadyAside = list( filter(lambda pot:pot.bet == bet, self.pots) )
-        if len( alreadyAside ) == 0:
+        alreadyAside = list(filter(lambda pot: pot.bet == bet, self.pots))
+        if len(alreadyAside) == 0:
             # open new side pot
-            sidePot = Pot( bet )
-            sidePot.eligible = copy( players ) # the original list might be used elsewhere, so just a copy here
-            self.pots.append( sidePot )
+            sidePot = Pot(bet)
+            # the original list might be used elsewhere, so just a copy here
+            sidePot.eligible = copy(players)
+            self.pots.append(sidePot)
         else:
             # join the existing pot
             # there can't be more than one side pot with the same value of bet as player has due
             #     to the way we construct new pots
             alreadyAside[0].eligible += players
 
-
     def allIn(self, player: Player):
         self.addToPot([player], player.bet)
         [ua.notifyAllIn(player) for ua in self.uas]
 
-
     def dealPocketCards(self):
-        for idx in list( range( 1, 1+len(self.players) ) ):
+        for idx in list(range(1, 1+len(self.players))):
             self.playIdx = (self.dealIdx + idx) % len(self.players)
-            player = self.players[ self.playIdx ]
+            player = self.players[self.playIdx]
             cards = self.croupier.drawCards(2)
             player.pockets = cards
 
-
     def dealCommunityCards(self, numCards: int):
-        self.comCards += self.croupier.drawCards( numCards )
+        self.comCards += self.croupier.drawCards(numCards)
         [ua.notifyCommunityCards(self.comCards) for ua in self.uas]
         sleep(1)
-
 
     def announceWins(self, wins: Dict[Player, int]):
         for winner, win in wins.items():
             [ua.notifyPotWin(winner, win) for ua in self.uas]
-
 
     def allSevenCards(self, player: Player) -> List[int]:
         """
@@ -202,48 +186,46 @@ class TexasHoldEmGame():
         """
         return player.getPocketCards() + self.comCards
 
-
     def getBestHandOwner(self, comps: List[Player]) -> List[Player]:
-        if len( comps ) < 1:
-            raise ValueError('determining best hand of anybody') # TODO: localize
-        elif len( comps ) > 1:
-            lead = [ comps[0] ]
-            leadHand = HE.evaluateHand( self.allSevenCards( lead[0] ) )
-            others = comps[ 1 : len(comps) ]
+        if len(comps) < 1:
+            # TODO: localize
+            raise ValueError('determining best hand of anybody')
+        elif len(comps) > 1:
+            lead = [comps[0]]
+            leadHand = HE.evaluateHand(self.allSevenCards(lead[0]))
+            others = comps[1: len(comps)]
             for pl in others:
-                hand = HE.evaluateHand( self.allSevenCards( pl ) )
-                compare = HE.compareHands( hand, leadHand )
+                hand = HE.evaluateHand(self.allSevenCards(pl))
+                compare = HE.compareHands(hand, leadHand)
                 if compare == HE.BETTER:
-                    lead = [ pl ]
+                    lead = [pl]
                     leadHand = hand
                 elif compare == HE.EQUAL:
-                    lead.append( pl )
+                    lead.append(pl)
         else:
-            lead = comps # easy :)
+            lead = comps  # easy :)
         return lead
-
 
     def evaluateSinglePot(self, pot: Pot, nextPotBet: int) -> Dict[Player, int]:
         potSize = 0
         for pl in self.players:
             if pl.bet > nextPotBet:
                 potSize += min(pl.bet, pot.bet) - nextPotBet
-        winners: List[Player] = self.getBestHandOwner( pot.eligible )
-        win = potSize // len( winners )
-        remain = potSize % len( winners )
-        winList = { winner: win for winner in winners }
+        winners: List[Player] = self.getBestHandOwner(pot.eligible)
+        win = potSize // len(winners)
+        remain = potSize % len(winners)
+        winList = {winner: win for winner in winners}
         if remain > 0:
             # find first eligible player left to the dealer
             # TODO: one way chain of players makes life easy here
-            receivers = [self.players[(self.dealIdx+1+idx)%len(self.players)] for idx in range( len( self.players ) )
-                    if self.players[(self.dealIdx+1+idx)%len(self.players)] in pot.eligible ]
+            receivers = [self.players[(self.dealIdx+1+idx) % len(self.players)] for idx in range(len(self.players))
+                         if self.players[(self.dealIdx+1+idx) % len(self.players)] in pot.eligible]
             idx = 0
             while remain > 0:
                 winList[receivers[idx]] += 1
                 remain -= 1
-                idx = (idx + 1) % len( receivers )
+                idx = (idx + 1) % len(receivers)
         return winList
-
 
     def evaluatePots(self) -> Dict[Player, int]:
         """
@@ -257,10 +239,12 @@ class TexasHoldEmGame():
         If no community cards have been dealt, the evaluation may raise an indes error when addressing a kicker that is undefined.
         """
         # add remaining players to highest pot, create thsi pot if necessary
-        self.addToPot( self.getActivePlayers(), self.curBet)
-        self.pots.sort(key=lambda pot:pot.bet, reverse=True) # pots on decreasing order of betting value
-        self.pots.append( Pot(0) ) # a pivot pot at a betting value of 0, placed at the end of the list
-        wins = {} # takes up a dict "player: win"
+        self.addToPot(self.getActivePlayers(), self.curBet)
+        # pots on decreasing order of betting value
+        self.pots.sort(key=lambda pot: pot.bet, reverse=True)
+        # a pivot pot at a betting value of 0, placed at the end of the list
+        self.pots.append(Pot(0))
+        wins = {}  # takes up a dict "player: win"
 
         # # TODO: All 5 com cards are revealed even if there is only one player left
         # # missing community cards if more than one player wanna cash in
@@ -269,22 +253,21 @@ class TexasHoldEmGame():
         #         self.dealCommunityCards( 5 - len(self.comCards) )
         #         sleep(0.5)
 
-        for idx in range( len(self.pots) - 1 ): # for all pots except pivot pot
-            pot = self.pots[ idx ]
-            nextPot = self.pots[ idx + 1 ]
-            winnersThisPot = self.evaluateSinglePot( pot, nextPot.bet )
+        for idx in range(len(self.pots) - 1):  # for all pots except pivot pot
+            pot = self.pots[idx]
+            nextPot = self.pots[idx + 1]
+            winnersThisPot = self.evaluateSinglePot(pot, nextPot.bet)
             for winner, win in winnersThisPot.items():
                 if winner in wins:
-                    wins[ winner ] += win
+                    wins[winner] += win
                 else:
-                    wins[ winner ] = win
+                    wins[winner] = win
             # players eligible for higher pots are also eligible for lower pots
             nextPot.eligible += pot.eligible
 
         return wins
 
-
-    def checkBilance(self, player: Player, verbose: bool=True):
+    def checkBilance(self, player: Player, verbose: bool = True):
         if player.bet > self.curBet:
             self.raiseBet(player, verbose)
         elif player.bet == self.curBet:
@@ -302,25 +285,23 @@ class TexasHoldEmGame():
             self.allIn(player)
             player.setEligibleOnly()
 
-
     def playAction(self, player: Player):
         minRaise = self.curBet + self.bb
 
-        playersBet = player.demandBet( self.curBet , minRaise )
+        playersBet = player.demandBet(self.curBet, minRaise)
         if playersBet < 0:
-            self.fold( player )
+            self.fold(player)
         else:
             # clamp bet between the last bet and the number of chips the player is owning a.t.m.
-            playersBet = min( player.stack + player.bet, playersBet )
-            playersBet = max( player.bet, playersBet )
+            playersBet = min(player.stack + player.bet, playersBet)
+            playersBet = max(player.bet, playersBet)
             if playersBet > self.curBet and playersBet < minRaise:
                 playersBet = self.curBet
             if playersBet == player.bet:
-                self.check( player )
+                self.check(player)
             else:
-                player.incBet( playersBet - player.bet )
-                self.checkBilance( player )
-
+                player.incBet(playersBet - player.bet)
+                self.checkBilance(player)
 
     def doesIntervalGoOn(self, player: Player) -> bool:
         """
@@ -332,54 +313,50 @@ class TexasHoldEmGame():
         return:
         Stop betting?
         """
-        return player is not None and ( player.bet < self.curBet or player.yetUnasked )
-
+        return player is not None and (player.bet < self.curBet or player.yetUnasked)
 
     def playInterval(self):
-        player = self.players[ self.playIdx ]
-        while self.doesIntervalGoOn( player ):
+        player = self.players[self.playIdx]
+        while self.doesIntervalGoOn(player):
             if player.yetUnasked:
                 player.yetUnasked = False  # remove flag
             self.playAction(player)
-            player = self.shiftPlayIndex( self.playIdx )
+            player = self.shiftPlayIndex(self.playIdx)
             sleep(0.5)
-
 
     def firstInterval(self):
         for pl in self.getActivePlayers():
             pl.yetUnasked = True
 
         # set blinds
-        if len( self.players ) > 2:
-            player = self.shiftPlayIndex( self.dealIdx )
+        if len(self.players) > 2:
+            player = self.shiftPlayIndex(self.dealIdx)
         else:
-            player = self.players[ self.dealIdx ]
+            player = self.players[self.dealIdx]
 
         # small blind
         player.incBet(self.sb)
         [spec.notifySmallBlind(player) for spec in self.spectators]
-        self.checkBilance( player, False )
+        self.checkBilance(player, False)
 
         # big blind
-        player = self.shiftPlayIndex( self.playIdx )
+        player = self.shiftPlayIndex(self.playIdx)
         player.incBet(self.bb)
         [spec.notifyBigBlind(player) for spec in self.spectators]
-        self.checkBilance( player, False )
+        self.checkBilance(player, False)
 
         self.lastToBeAsked = player
         self.raiser = None
-        self.shiftPlayIndex( self.playIdx )
+        self.shiftPlayIndex(self.playIdx)
         self.playInterval()
-
 
     def playFurtherInterval(self):
         for pl in self.getActivePlayers():
             pl.yetUnasked = True
         self.lastToBeAsked = self.getActiveRightToDealer()
         self.raiser = None
-        self.shiftPlayIndex( self.dealIdx )
+        self.shiftPlayIndex(self.dealIdx)
         self.playInterval()
-
 
     def needsPlayingAnInterval(self) -> bool:
         """
@@ -388,8 +365,7 @@ class TexasHoldEmGame():
         return:
         Is playing the betting interval required?
         """
-        return len( self.getActivePlayers() ) > 1
-
+        return len(self.getActivePlayers()) > 1
 
     def playAHand(self):
         # reset everything
@@ -408,7 +384,7 @@ class TexasHoldEmGame():
 
         # first interval
         self.firstInterval()
-        if len( self.getEligiblePlayers() ) == 1:
+        if len(self.getEligiblePlayers()) == 1:
             return self.evaluatePots()
 
         # flop and second interval
@@ -416,7 +392,7 @@ class TexasHoldEmGame():
         sleep(0.5)
         if self.needsPlayingAnInterval():
             self.playFurtherInterval()
-        if len( self.getEligiblePlayers() ) == 1:
+        if len(self.getEligiblePlayers()) == 1:
             return self.evaluatePots()
 
         # turn and third interval
@@ -424,7 +400,7 @@ class TexasHoldEmGame():
         sleep(0.5)
         if self.needsPlayingAnInterval():
             self.playFurtherInterval()
-        if len( self.getEligiblePlayers() ) == 1:
+        if len(self.getEligiblePlayers()) == 1:
             return self.evaluatePots()
 
         # river and fourth interval
@@ -432,14 +408,13 @@ class TexasHoldEmGame():
         sleep(0.5)
         if self.needsPlayingAnInterval():
             self.playFurtherInterval()
-        if len( self.getEligiblePlayers() ) == 1:
+        if len(self.getEligiblePlayers()) == 1:
             return self.evaluatePots()
 
         # showdown
         # TODO: reveal pocket cards to other players
         # TODO: allow for folding at this point
         return self.evaluatePots()
-
 
     def runGame(self):
         if len(self.players) < 2:
@@ -456,37 +431,35 @@ class TexasHoldEmGame():
         [ua.announceFirstDealer(self.players[self.dealIdx]) for ua in self.uas]
 
         # game loop
-        while len( self.players ) > 2:
+        while len(self.players) > 2:
             wins = self.playAHand()
-            self.announceWins( wins )
+            self.announceWins(wins)
             for pl, win in wins.items():
                 pl.stack += win
             sleep(0.5)
 
             # eliminate players
-            out = list( filter(lambda pl:pl.stack == 0, self.players) )
+            out = list(filter(lambda pl: pl.stack == 0, self.players))
             for pl in out:
                 # remove from players, take care of dealIdx
-                plIdx = self.players.index( pl )
+                plIdx = self.players.index(pl)
                 if self.dealIdx >= plIdx:
                     self.dealIdx -= 1
                 del self.players[plIdx]
-                [ ua.notifyElimination(pl) for ua in self.uas ]
+                [ua.notifyElimination(pl) for ua in self.uas]
                 # players alive become spectators
                 if pl.isHuman():
-                    self.addSpectator( pl )
+                    self.addSpectator(pl)
                 else:
-                    self.uas.remove( pl )
+                    self.uas.remove(pl)
 
             # shift dealer
-            self.dealIdx = (self.dealIdx + 1) % len( self.players )
-            [ ua.notifyEndOfHand() for ua in self.uas ]
+            self.dealIdx = (self.dealIdx + 1) % len(self.players)
+            [ua.notifyEndOfHand() for ua in self.uas]
             sleep(0.5)
 
         # return winners
-        return { pl: pl.stack for pl in self.players }
-
-
+        return {pl: pl.stack for pl in self.players}
 
     # _______________ any time _______________
 

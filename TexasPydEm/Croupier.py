@@ -1,13 +1,14 @@
-from random import randint;
+from random import randint
+
 
 class Croupier():
-    
+
     def __init__(self):
         self.restoreDeck()
-        
+
     def restoreDeck(self):
         self.cards = list(range(0, 52))
-    
+
     def drawCards(self, numCards: int):
         picks = min(numCards, len(self.cards))
         drawn = []

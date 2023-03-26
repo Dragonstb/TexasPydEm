@@ -14,9 +14,9 @@ class Player(UserAgent):
     stack: int          # number of chips the player owns and that have not been betted
     bet: int            # number of chips the player is betting in the current hand
     active: bool        # DEPRECATED (replaced by __status)
-    yetUnasked: bool    # has the player yet *not* been asked for action in the current betting interval
+    # has the player yet *not* been asked for action in the current betting interval
+    yetUnasked: bool
     __status: int       # status when playing a hand: active, eligible, or inactive
-
 
     def __init__(self, name):
         super().__init__(name)
@@ -26,7 +26,6 @@ class Player(UserAgent):
         self.stack = 0
         self.__status = Player._ACTIVE
 
-
     def isActive(self):
         """
         A player is active when he/she is still actively participating in playing a hand.
@@ -35,7 +34,6 @@ class Player(UserAgent):
         Is this player active?
         """
         return self.__status == Player._ACTIVE
-
 
     def isEligible(self):
         """
@@ -47,14 +45,12 @@ class Player(UserAgent):
         """
         return self.__status == Player._ELIGIBLE or self.__status == Player._ACTIVE
 
-
     def setActive(self):
         """
         A player is active when he/she is still actively participating in playing a hand. ACTIVE players are also
         ELIGIBLE.
         """
         self.__status = Player._ACTIVE
-
 
     def setEligibleOnly(self):
         """
@@ -65,7 +61,6 @@ class Player(UserAgent):
         """
         self.__status = Player._ELIGIBLE
 
-
     def setInactive(self):
         """
         An inactive player neither participates in the ongoing hand any longer nor is he/she eligible
@@ -74,7 +69,6 @@ class Player(UserAgent):
         This method sets this player's status to INACTIVE.
         """
         self.__status = Player._INACTIVE
-
 
     def getOpenCards(self) -> List[int]:
         return self.opens
@@ -98,14 +92,22 @@ class Player(UserAgent):
     def incBet(self, value: int):
         self.bet += value
         self.stack -= value
-        if(self.stack < 0):
+        if (self.stack < 0):
             self.bet += self.stack
             self.stack = 0
 
-    # croupier demands a decision
-    # demand: current bet value demanded
-    # minRaiseValue: minimum value of bet to be reached when raising
-    # return: >= 0: chips additionally transferred into the personal bet (on top on the chips already placed)
-    #          < 0: fold
     def demandBet(self, demand: int, minRaiseValue) -> int:
+        """
+        The croupier asks the player for an action.
+
+        demand:
+        Betting height of the stakes in the current hand.
+
+        minRaiseVale:
+        How much the player has to bet in case she/he wanna raise.
+
+        return:
+        Negative number for folding. Non-negative values is how much the player wants to bet in total now. 'In total'
+        here means that former bets in this hand are included. I.e. the value returned should be at least 'demand'.
+        """
         return Player.FOLD

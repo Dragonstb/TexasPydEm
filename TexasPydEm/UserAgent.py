@@ -1,6 +1,7 @@
 import Localization as Loc
 from typing import List
 
+
 class UserAgent():
 
     def __init__(self, name):
@@ -9,8 +10,6 @@ class UserAgent():
     def __hash__(self) -> int:
         return hash((self.name))
 
-
-
     # _______________ start a game _______________
 
     def setPlayers(self, players):
@@ -18,8 +17,6 @@ class UserAgent():
 
     def announceFirstDealer(self, player):
         pass
-
-
 
     # _______________ tell user agent what is going on _______________
 
@@ -81,4 +78,4 @@ class UserAgent():
 
     def debug(self):
         print(self.name)
-        [cd.debug('  ') for pl,cd in self.comps.items()]
+        [cd.debug('  ') for pl, cd in self.comps.items()]

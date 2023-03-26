@@ -44,7 +44,6 @@ PLAYER_BETS = 'player_bets'
 PLAYER_ELIMINATED = 'player_eliminated'
 
 
-
 loc_en_UK = {
     INVALID_CARD: 'invalid card',
     NOT_AN_USERAGENT: 'not a user agent',
@@ -73,8 +72,8 @@ loc_en_UK = {
 
 suits = [
     chr(0x2663),
-    chr(0x2666),#chr(0x2662),
-    chr(0x2665),#chr(0x2661),
+    chr(0x2666),  # chr(0x2662),
+    chr(0x2665),  # chr(0x2661),
     chr(0x2660),
 ]
 
@@ -94,6 +93,7 @@ values = [
     'A',
 ]
 
+
 def getString(key):
     try:
         value = loc_en_UK[key]
@@ -101,11 +101,12 @@ def getString(key):
         value = '<' + key + '>'
     return value
 
-#  0 = clubs 2, 1 = clubs 3, ... , 12 = clubs ace
-# 13 = diamonds 2,
-# 26 = heats 2,
-# 39 = spades 2, ..., 51 = spades ace
+
 def getCard(card: int):
+    #  0 = clubs 2, 1 = clubs 3, ... , 12 = clubs ace
+    # 13 = diamonds 2,
+    # 26 = heats 2,
+    # 39 = spades 2, ..., 51 = spades ace
     if card >= 0 and card < 52:
         return values[CU.getCardValue(card)] + suits[CU.getCardSuit(card)]
     else:

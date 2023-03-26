@@ -11,8 +11,10 @@ def isHigherCard(cardA: int, cardB: int) -> bool:
     else:
         return True
 
+
 def getCardValue(card: int) -> int:
     return card % 13
+
 
 def getCardSuit(card: int) -> int:
     return card // 13

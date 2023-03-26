@@ -9,13 +9,14 @@ class Player(UserAgent):
     _ELIGIBLE = 1
     _ACTIVE = 2
 
-    opens: List[int]
-    pockets: List[int]
-    stack: int
-    bet: int
+    opens: List[int]    # player's open cards
+    pockets: List[int]  # player's concealed cards
+    stack: int          # number of chips the player owns and that have not been betted
+    bet: int            # number of chips the player is betting in the current hand
     active: bool        # DEPRECATED (replaced by __status)
-    hasBeenAsked: bool
+    yetUnasked: bool    # has the player yet *not* been asked for action in the current betting interval
     __status: int       # status when playing a hand: active, eligible, or inactive
+
 
     def __init__(self, name):
         super().__init__(name)
@@ -23,6 +24,7 @@ class Player(UserAgent):
         self.pockets = []
         self.bet = 0
         self.stack = 0
+        self.__status = Player._ACTIVE
 
 
     def isActive(self):
@@ -44,6 +46,14 @@ class Player(UserAgent):
         Is this player eligible?
         """
         return self.__status == Player._ELIGIBLE or self.__status == Player._ACTIVE
+
+
+    def setActive(self):
+        """
+        A player is active when he/she is still actively participating in playing a hand. ACTIVE players are also
+        ELIGIBLE.
+        """
+        self.__status = Player._ACTIVE
 
 
     def setEligibleOnly(self):

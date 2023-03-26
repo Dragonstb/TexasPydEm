@@ -246,17 +246,28 @@ class TexasHoldEmGame():
 
 
     def evaluatePots(self) -> Dict[Player, int]:
+        """
+        Evaluates who wins how much.
+
+        return:
+        A dict that says which player wins how much. The wins are gross wins, i.e. the player's contribution to the pot is not
+
+
+        raise:
+        If no community cards have been dealt, the evaluation may raise an indes error when addressing a kicker that is undefined.
+        """
+        # add remaining players to highest pot, create thsi pot if necessary
         self.addToPot( self.getActivePlayers(), self.curBet)
         self.pots.sort(key=lambda pot:pot.bet, reverse=True) # pots on decreasing order of betting value
         self.pots.append( Pot(0) ) # a pivot pot at a betting value of 0, placed at the end of the list
         wins = {} # takes up a dict "player: win"
 
-        # TODO: All 5 com cards are revealed even if there is only one player left
-        # missing community cards if more than one player wanna cash in
-        if len( self.pots ) > 1 or len( self.pots[0].eligible ) > 1:
-            if len( self.comCards ) < 5:
-                self.dealCommunityCards( 5 - len(self.comCards) )
-                sleep(0.5)
+        # # TODO: All 5 com cards are revealed even if there is only one player left
+        # # missing community cards if more than one player wanna cash in
+        # if len( self.pots ) > 1 or len( self.pots[0].eligible ) > 1:
+        #     if len( self.comCards ) < 5:
+        #         self.dealCommunityCards( 5 - len(self.comCards) )
+        #         sleep(0.5)
 
         for idx in range( len(self.pots) - 1 ): # for all pots except pivot pot
             pot = self.pots[ idx ]
@@ -311,7 +322,7 @@ class TexasHoldEmGame():
                 self.checkBilance( player )
 
 
-    def continueIntervalCondition(self, player: Player) -> bool:
+    def doesIntervalGoOn(self, player: Player) -> bool:
         """
         Checks the condition for continuing / ending a betting interval.
 
@@ -321,14 +332,14 @@ class TexasHoldEmGame():
         return:
         Stop betting?
         """
-        return player is not None and ( player.bet < self.curBet or not player.hasBeenAsked )
+        return player is not None and ( player.bet < self.curBet or player.yetUnasked )
 
 
     def playInterval(self):
         player = self.players[ self.playIdx ]
-        while self.continueIntervalCondition( player ):
-            if not player.hasBeenAsked:
-                player.hasBeenAsked = True  # set flag
+        while self.doesIntervalGoOn( player ):
+            if player.yetUnasked:
+                player.yetUnasked = False  # remove flag
             self.playAction(player)
             player = self.shiftPlayIndex( self.playIdx )
             sleep(0.5)
@@ -336,7 +347,7 @@ class TexasHoldEmGame():
 
     def firstInterval(self):
         for pl in self.getActivePlayers():
-            pl.hasBeenAsked = False
+            pl.yetUnasked = True
 
         # set blinds
         if len( self.players ) > 2:
@@ -363,7 +374,7 @@ class TexasHoldEmGame():
 
     def playFurtherInterval(self):
         for pl in self.getActivePlayers():
-            pl.hasBeenAsked = False
+            pl.yetUnasked = True
         self.lastToBeAsked = self.getActiveRightToDealer()
         self.raiser = None
         self.shiftPlayIndex( self.dealIdx )
@@ -395,7 +406,6 @@ class TexasHoldEmGame():
             [spec.notifyCardDealing(pl) for spec in self.spectators]
         sleep(0.5)
 
-        # TODO: all wrong if you have only all in and folded players (i.e. no active players left)
         # first interval
         self.firstInterval()
         if len( self.getEligiblePlayers() ) == 1:
@@ -426,7 +436,7 @@ class TexasHoldEmGame():
             return self.evaluatePots()
 
         # showdown
-        # TODO: reveal cards to other players
+        # TODO: reveal pocket cards to other players
         # TODO: allow for folding at this point
         return self.evaluatePots()
 

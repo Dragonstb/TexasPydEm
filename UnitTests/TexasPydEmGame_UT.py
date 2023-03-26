@@ -5,9 +5,6 @@ from TexasPydEm.TexasHoldEmGame import TexasHoldEmGame as Game
 
 class TexasPydEmGame_UT(UT.TestCase):
 
-    # _______________ pot evaluation _______________
-
-
     def setUp(self) -> None:
         self.pair = TP( 'Player_pair' )
         self.twoPair = TP( 'Player_twoPair' )
@@ -15,6 +12,7 @@ class TexasPydEmGame_UT(UT.TestCase):
         self.players = [ self.pair, self.twoPair, self.flush ]
         for pl in self.players:
             pl.active = True
+            pl.setActive()
         self.game = Game()
         self.game.dealIdx = 0
         self.game.players = self.players
@@ -23,6 +21,90 @@ class TexasPydEmGame_UT(UT.TestCase):
         self.pair.pockets = [1+13, 7+26]  # 3 of diamonds and 9 of hearts: pair
         self.twoPair.pockets = [1+13, 2+26]  # 3 and 4 of diamonds: two pair
         self.flush.pockets = [4, 7+26]     # 4 of clubs and 9 of hearts: straight flush
+
+
+
+    # _______________ shift play index _______________
+
+    def test_shiftPlayIndex_adjacentPlayer(self):
+        old = 0
+        player = self.game.shiftPlayIndex( old )
+        self.assertEqual(player, self.players[1], 'incorrect next player')
+
+    def test_shiftPlayIndex_adjacentPlayerRoundTheCorner(self):
+        old = len( self.players ) - 1
+        player = self.game.shiftPlayIndex( old )
+        self.assertEqual(player, self.players[0], 'incorrect next player')
+
+    def test_shidtPlayIndex_skipInactive(self):
+        old = 0
+        self.players[ old+1 ].setInactive()
+        player = self.game.shiftPlayIndex( old )
+        self.assertEqual(player, self.players[ old+2 ], 'incorrect next player')
+
+    def test_shidtPlayIndex_skipEligible(self):
+        old = 0
+        self.players[ old+1 ].setEligibleOnly()
+        player = self.game.shiftPlayIndex( old )
+        self.assertEqual(player, self.players[ old+2 ], 'incorrect next player')
+
+
+    # _______________ continue with betting interval _______________
+
+    # ---- player has noot been aksed yet -> definitely ask ----
+
+    def test_doesIntervalGoOn_unaskedLowerBet(self):
+        self.game.curBet = 200
+        self.pair.bet = 100
+        self.pair.yetUnasked = True
+        self.assertTrue( self.game.doesIntervalGoOn(self.pair) )
+
+
+    def test_doesIntervalGoOn_unaskedEqualBet(self):
+        self.game.curBet = 200
+        self.pair.bet = 200
+        self.pair.yetUnasked = True
+        self.assertTrue( self.game.doesIntervalGoOn(self.pair) )
+
+
+    def test_doesIntervalGoOn_unaskedHigherLowerBet(self):
+        self.game.curBet = 100
+        self.pair.bet = 200
+        self.pair.yetUnasked = True
+        self.assertTrue( self.game.doesIntervalGoOn(self.pair) )
+
+
+    # ---- player has been asked already in this betting interval, go on only if player's bet is lower ----
+
+    def test_doesIntervalGoOn_askedLowerBet(self):
+        self.game.curBet = 200
+        self.pair.bet = 100
+        self.pair.yetUnasked = False
+        self.assertTrue( self.game.doesIntervalGoOn(self.pair) )
+
+
+    def test_doesIntervalGoOn_askedEqualBet(self):
+        self.game.curBet = 200
+        self.pair.bet = 200
+        self.pair.yetUnasked = False
+        self.assertFalse( self.game.doesIntervalGoOn(self.pair) )
+
+
+    def test_doesIntervalGoOn_askedHigherLowerBet(self):
+        self.game.curBet = 100
+        self.pair.bet = 200
+        self.pair.yetUnasked = False
+        self.assertFalse( self.game.doesIntervalGoOn(self.pair) )
+
+
+    # ---- no next player, never go on here ----
+
+    def test_doesIntervalGoOn_none(self):
+        self.assertFalse( self.game.doesIntervalGoOn(None) )
+
+
+
+    # _______________ pot evaluation _______________
 
 
     def test_singlePot(self):
@@ -105,6 +187,7 @@ class TexasPydEmGame_UT(UT.TestCase):
         # wins main pot A
         potA.eligible = [self.flush]
         self.flush.active = False
+        self.flush.setEligibleOnly()
         self.flush.bet = betA
         # fighting for pot A and B
         self.pair.bet = betB
@@ -129,11 +212,13 @@ class TexasPydEmGame_UT(UT.TestCase):
         further.pockets = self.twoPair.pockets
         further.bet = 150
         further.active = False
+        further.setInactive()
         self.players.append( further )
         # wins main pot A
         potA.eligible = [self.flush]
         self.flush.active = False
         self.flush.bet = betA
+        self.flush.setEligibleOnly()
         # fighting for pot A and B
         self.pair.bet = betB
         self.twoPair.bet = betB

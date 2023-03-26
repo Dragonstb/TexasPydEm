@@ -18,18 +18,22 @@ class TexasHoldEmGame():
     __MAX_PLAYERS = 10
 
     players: List[Player]  # the competing players
-    spectators: List[UA]  # a throng of allknowing spectators
-    sb: int               # current small blind
-    bb: int               # current big blind
-    startStack: int       # stack size at begin
-    dealIdx: int          # index of current dealer in list self.players
-    playIdx: int          # index of player in action in list self.players
-    raiser: int           # player has raised last - DEPRECATED (unused)
-    curBet: int           # current height of bet
-    comCards: List[int]   # community cards
-    pots: List[Pot]       # pot and split pots
+    spectators: List[UA]   # a throng of allknowing spectators
+    sb: int                # current small blind
+    bb: int                # current big blind
+    startStack: int        # stack size at begin
+    dealIdx: int           # index of current dealer in list self.players
+    playIdx: int           # index of player in action in list self.players
+    raiser: int            # player has raised last - DEPRECATED (unused)
+    curBet: int            # current height of bet
+    comCards: List[int]    # community cards
+    pots: List[Pot]        # pot and split pots
     # player last to be asked for action DEPRECATED (unused)
     lastToBeAsked: Player
+    # the game exits if all of the players in the list have been eliminated. 'None' deactivates this
+    # criterion.
+    playersNeeded: List[Player]
+    playUntilLeft: int     # at how many players left the game will stop
 
     def __init__(self):
         self.state = self.PRE_GAME
@@ -39,6 +43,8 @@ class TexasHoldEmGame():
         self.sb = 250
         self.bb = 2*self.sb
         self.startStack = 20*self.bb
+        self.playersNeeded = None
+        self.playUntilLeft = 1
 
     # _______________ pre game _______________
 
@@ -424,6 +430,15 @@ class TexasHoldEmGame():
         # TODO: allow for folding at this point
         return self.evaluatePots()
 
+    def continueGame(self):
+        playersStillThere = self.playersNeeded is None
+        if not playersStillThere:
+            for pl in self.playersNeeded:
+                if pl in self.players:
+                    playersStillThere = True
+                    break
+        return len(self.players) > max(self.playUntilLeft, 1) and playersStillThere
+
     def runGame(self):
         if len(self.players) < 2:
             raise ValueError(Loc.getString(Loc.LESS_THAN_TWO_PLAYERS))
@@ -439,7 +454,7 @@ class TexasHoldEmGame():
         [ua.announceFirstDealer(self.players[self.dealIdx]) for ua in self.uas]
 
         # game loop
-        while len(self.players) > 2:
+        while self.continueGame():
             wins = self.playAHand()
             self.announceWins(wins)
             for pl, win in wins.items():

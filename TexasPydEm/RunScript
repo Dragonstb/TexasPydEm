@@ -7,7 +7,9 @@ from CLISpecUserAgent import CLISpecUserAgent as CLIUA
 from TexasHoldEmGame import TexasHoldEmGame as Game
 
 game = Game()
-game.addPlayer(FRP('Norbert'))
+player = FRP('Norbert')
+game.playersNeeded = [player]
+game.addPlayer(player)
 game.addPlayer(FRP('Brigitte'))
 game.addPlayer(FRP('Alex'))
 game.addPlayer(FRP('Jill'))

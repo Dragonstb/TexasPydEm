@@ -64,8 +64,14 @@ class TexasHoldEmGame():
         activePlayers = list(filter(lambda pl: pl.isActive(), self.players))
         return activePlayers
 
+    def hasSeveralActives(self) -> bool:
+        return len(self.getActivePlayers()) > 1
+
     def getEligiblePlayers(self) -> List[Player]:
         return list(filter(lambda pl: pl.isEligible(), self.players))
+
+    def hasSeveralEligibles(self) -> bool:
+        return len(self.getEligiblePlayers()) > 1
 
     def getActiveRightToDealer(self) -> Player:
         """
@@ -232,11 +238,13 @@ class TexasHoldEmGame():
         Evaluates who wins how much.
 
         return:
-        A dict that says which player wins how much. The wins are gross wins, i.e. the player's contribution to the pot is not
+        A dict that says which player wins how much. The wins are gross wins, i.e. the player's contribution to the
+        pot is not
 
 
         raise:
-        If no community cards have been dealt, the evaluation may raise an indes error when addressing a kicker that is undefined.
+        If no community cards have been dealt, the evaluation may raise an index error when addressing a kicker that
+        is undefined.
         """
         # add remaining players to highest pot, create thsi pot if necessary
         self.addToPot(self.getActivePlayers(), self.curBet)
@@ -313,7 +321,7 @@ class TexasHoldEmGame():
         return:
         Stop betting?
         """
-        return player is not None and (player.bet < self.curBet or player.yetUnasked)
+        return player is not None and (player.bet < self.curBet or (player.yetUnasked and self.hasSeveralActives())) and self.hasSeveralEligibles()
 
     def playInterval(self):
         player = self.players[self.playIdx]

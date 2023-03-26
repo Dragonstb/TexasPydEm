@@ -51,7 +51,7 @@ class TexasPydEmGame_UT(UT.TestCase):
 
     # _______________ continue with betting interval _______________
 
-    # ---- player has noot been aksed yet -> definitely ask ----
+    # ---- player has noot been aksed yet -> definitely ask, except it is the last one who can win ----
 
     def test_doesIntervalGoOn_unaskedLowerBet(self):
         self.game.curBet = 200
@@ -70,6 +70,54 @@ class TexasPydEmGame_UT(UT.TestCase):
         self.pair.bet = 200
         self.pair.yetUnasked = True
         self.assertTrue(self.game.doesIntervalGoOn(self.pair))
+
+    def test_doesIntervalGoOn_lastEligibleUnaskedLowerBet(self):
+        self.game.curBet = 200
+        self.pair.bet = 100
+        self.pair.yetUnasked = True
+        self.twoPair.setInactive()
+        self.flush.setInactive()
+        self.assertFalse(self.game.doesIntervalGoOn(self.pair))
+
+    def test_doesIntervalGoOn_lastEligibleUnaskedEqualBet(self):
+        self.game.curBet = 200
+        self.pair.bet = 200
+        self.pair.yetUnasked = True
+        self.twoPair.setInactive()
+        self.flush.setInactive()
+        self.assertFalse(self.game.doesIntervalGoOn(self.pair))
+
+    def test_doesIntervalGoOn_lastEligibleUnaskedHigherLowerBet(self):
+        self.game.curBet = 100
+        self.pair.bet = 200
+        self.pair.yetUnasked = True
+        self.twoPair.setInactive()
+        self.flush.setInactive()
+        self.assertFalse(self.game.doesIntervalGoOn(self.pair))
+
+    def test_doesIntervalGoOn_lastActiveUnaskedLowerBet(self):
+        self.game.curBet = 200
+        self.pair.bet = 100
+        self.pair.yetUnasked = True
+        self.twoPair.setEligibleOnly()
+        self.flush.setInactive()
+        self.assertTrue(self.game.doesIntervalGoOn(self.pair))
+
+    def test_doesIntervalGoOn_lastActiveUnaskedEqualBet(self):
+        self.game.curBet = 200
+        self.pair.bet = 200
+        self.pair.yetUnasked = True
+        self.twoPair.setEligibleOnly()
+        self.flush.setInactive()
+        self.assertFalse(self.game.doesIntervalGoOn(self.pair))
+
+    def test_doesIntervalGoOn_lastActiveUnaskedHigherLowerBet(self):
+        self.game.curBet = 100
+        self.pair.bet = 200
+        self.pair.yetUnasked = True
+        self.twoPair.setEligibleOnly()
+        self.flush.setInactive()
+        self.assertFalse(self.game.doesIntervalGoOn(self.pair))
 
     # ---- player has been asked already in this betting interval, go on only if player's bet is lower ----
 

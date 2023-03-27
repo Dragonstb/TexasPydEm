@@ -260,13 +260,6 @@ class TexasHoldEmGame():
         self.pots.append(Pot(0))
         wins = {}  # takes up a dict "player: win"
 
-        # # TODO: All 5 com cards are revealed even if there is only one player left
-        # # missing community cards if more than one player wanna cash in
-        # if len( self.pots ) > 1 or len( self.pots[0].eligible ) > 1:
-        #     if len( self.comCards ) < 5:
-        #         self.dealCommunityCards( 5 - len(self.comCards) )
-        #         sleep(0.5)
-
         for idx in range(len(self.pots) - 1):  # for all pots except pivot pot
             pot = self.pots[idx]
             nextPot = self.pots[idx + 1]
@@ -388,11 +381,12 @@ class TexasHoldEmGame():
         self.comCards = []
         self.pots = []
         [pl.clearAll() for pl in self.players]
-        [ua.notifyBeginOfPlay(self.players[self.dealIdx]) for ua in self.uas]
+        [ua.notifyBeginOfHand(self.players[self.dealIdx]) for ua in self.uas]
 
         # pockets
         self.dealPocketCards()
         for pl in self.players:
+            pl.notifyCardDealing(pl)
             [spec.notifyCardDealing(pl) for spec in self.spectators]
         sleep(0.5)
 

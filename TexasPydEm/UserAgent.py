@@ -20,7 +20,7 @@ class UserAgent():
 
     # _______________ tell user agent what is going on _______________
 
-    def notifyBeginOfPlay(self, dealer):
+    def notifyBeginOfHand(self, dealer):
         pass
 
     def notifyCardDealing(self, player):

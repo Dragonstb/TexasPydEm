@@ -17,7 +17,7 @@ class CLISpecUserAgent(UserAgent):
             print(pattern.format(pl.name))
         print('--------------')
 
-    def notifyBeginOfPlay(self, dealer):
+    def notifyBeginOfHand(self, dealer):
         print()
         pattern = Loc.getString(Loc.DEALS_CARDS)
         print(pattern.format(dealer.name))

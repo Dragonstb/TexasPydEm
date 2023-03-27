@@ -2,25 +2,29 @@
 from UserAgent import UserAgent as UA
 from Player import Player
 from Players.FullyRandomPlayer import FullyRandomPlayer as FRP
+from Players.CLIPlayer import CLIPlayer as CLIP
 from Players.AlwaysCallPlayer import AlwaysCallPlayer as ACP
 from CLISpecUserAgent import CLISpecUserAgent as CLIUA
 from TexasHoldEmGame import TexasHoldEmGame as Game
 
+inp = None
+while inp is None:
+    print()
+    inp = input('enter your name: ')
+    if len(inp) > 10 or len(inp) < 2:
+        print('not more than 10 or less than 2 characters, please')
+        inp = None
+
 game = Game()
-player = FRP('Norbert')
-# game.playersNeeded = [player]
+player = CLIP(inp)
+game.playersNeeded = [player]
 game.addPlayer(player)
 game.addPlayer(FRP('Brigitte'))
 game.addPlayer(FRP('Alex'))
 game.addPlayer(FRP('Jill'))
 game.addPlayer(FRP('P'))
-# game.addPlayer(Player('Daniel'))
-# game.addPlayer(Player('Kaori'))
-# game.addPlayer(Player('Miguel'))
-# game.addPlayer(Player('Warren'))
-# game.addPlayer(Player('Stefanie'))
-
-game.addSpectator(CLIUA('Jim'))
+game.addPlayer(Player('Kaori'))
+game.addPlayer(Player('Miguel'))
 
 wins = game.runGame()
 

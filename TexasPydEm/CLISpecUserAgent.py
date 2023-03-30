@@ -84,5 +84,8 @@ class CLISpecUserAgent(UserAgent):
         pattern = Loc.getString(Loc.PLAYER_ELIMINATED)
         print(pattern.format(player.name))
 
+    def revealAllCards(self, player):
+        self.notifyCardDealing(player)
+
     def notifyEndOfHand(self):
         print('----------')

@@ -7,12 +7,14 @@ from typing import List
 class CLIPlayer(Player):
 
     # TODO: localize
-    # TODO: When entering a value, it always ends in the 'cannot bet lower than demand' branch (words work, though)
     comCards: str
     myCards: str
     nameLen: int
     valLen: int
     you: str
+    dealer: Player
+    smallBlind: Player
+    bigBlind: Player
 
     def isHuman(self):
         return True
@@ -28,62 +30,64 @@ class CLIPlayer(Player):
         self.nameLen += 1
 
     def notifyBeginOfHand(self, dealer):
-        self.comCards = '-'
+        self.dealer = dealer
+        self.smallBlind = None
+        self.bigBlind = None
+        self.comCards = '\u2e3a'  # double em dash
+        self.myCards = '\u2e3a'
         print()
+        print('----------')
+        print()
+        self.printChart(None)
         pattern = Loc.getString(Loc.DEALS_CARDS)
         print(pattern.format(dealer.name))
 
     def notifyCardDealing(self, player: Player):
         if player is self and len(player.getAllCards()) > 1:
-            pattern = Loc.getString(Loc.PLAYERS_OPEN_CARDS)
             cardNames = [Loc.getCard(card) for card in player.getAllCards()]
             self.myCards = reduce(lambda a, b: a+', '+b, cardNames)
-            print(pattern.format(player.name, self.myCards))
 
     def notifySmallBlind(self, player):
-        print()
-        pattern = Loc.getString(Loc.SET_SMALL_BLIND)
-        print(pattern.format(player.name))
+        self.smallBlind = player
 
     def notifyBigBlind(self, player):
-        pattern = Loc.getString(Loc.SET_BIG_BLIND)
-        print(pattern.format(player.name))
-        print()
+        self.bigBlind = player
 
     def notifyFolding(self, player):
         pattern = Loc.getString(Loc.PLAYER_FOLDS)
-        print(pattern.format(player.name))
+        display = pattern.format(player.name)
+        self.printDisplay(player, display)
 
     def notifyCheck(self, player):
         pattern = Loc.getString(Loc.PLAYER_CHECKS)
-        print(pattern.format(player.name))
+        display = pattern.format(player.name)
+        self.printDisplay(player, display)
 
     def notifyRaise(self, player):
         pattern = Loc.getString(Loc.PLAYER_RAISES)
-        print(pattern.format(player.name, str(player.bet)))
+        display = pattern.format(player.name, str(player.bet))
+        self.printDisplay(player, display)
 
     def notifyCall(self, player):
         pattern = Loc.getString(Loc.PLAYER_CALLS)
-        print(pattern.format(player.name))
+        display = pattern.format(player.name)
+        self.printDisplay(player, display)
 
     def notifyLastPenny(self, player):
         pattern = Loc.getString(Loc.PLAYER_BETS)
-        print(pattern.format(player.name, str(player.bet)))
+        display = pattern.format(player.name, str(player.bet))
+        self.printDisplay(player, display)
 
     def notifyAllIn(self, player):
         pattern = Loc.getString(Loc.PLAYER_ALL_IN)
-        print(pattern.format(player.name))
+        display = pattern.format(player.name)
+        self.printDisplay(player, display)
 
     def demandBet(self, demand: int, minRaiseValue) -> int:
+        self.printChart(self)
         inp = None
         while inp is None:
-            self.printPlayerStats()
-            print()
-            pattern = 'pocket cards: {0}, community cards: {1}'
-            print(pattern.format(self.myCards, self.comCards))
-            print('current bet: '+str(demand) +
-                  ', for raise: '+str(minRaiseValue))
-            inp = input('enter your action: ')
+            inp = input('enter your action: ').strip()
             if inp == 'call' and self.bet < demand:
                 return demand
             elif inp == 'check' and self.bet == demand:
@@ -95,7 +99,7 @@ class CLIPlayer(Player):
                 inp = None
             else:
                 try:
-                    value = str.isdigit(inp)
+                    value = int(inp)
                     value = self.cleanValue(value, demand, minRaiseValue)
                     if value is not None:
                         return value
@@ -116,7 +120,7 @@ class CLIPlayer(Player):
         cardNames = [Loc.getCard(card) for card in cards]
         self.comCards = reduce(lambda a, b: a+', '+b, cardNames)
         print()
-        print(pattern.format(self.comCards))
+        print(cardNames)
 
     def notifyElimination(self, player):
         pattern = Loc.getString(Loc.PLAYER_ELIMINATED)
@@ -124,6 +128,11 @@ class CLIPlayer(Player):
 
     def notifyEndOfHand(self):
         print('----------')
+
+    def revealAllCards(self, player):
+        cardNames = [Loc.getCard(card) for card in player.getAllCards()]
+        formatted = reduce(lambda a, b: a+', '+b, cardNames)
+        print(player.name+' has cards: '+formatted)
 
     # _______________ utilities _______________
 
@@ -133,8 +142,8 @@ class CLIPlayer(Player):
         else:
             return string[0:length]
 
-    def singlePlayerStats(self, pl: Player) -> str:
-        pattern = '  {0} {1} {2} {3}'
+    def singlePlayerStats(self, pl: Player, playing: bool = False) -> str:
+        pattern = '{4}{5}{0} {1} {2} {3}'
         if pl is not self:
             name = pl.name
         else:
@@ -144,6 +153,7 @@ class CLIPlayer(Player):
         stack = self.fitToLength(stack, self.valLen)
         bet = str(pl.bet)
         bet = self.fitToLength(bet, self.valLen)
+
         if pl.isActive():
             status = ''
         elif pl.isEligible():
@@ -153,14 +163,21 @@ class CLIPlayer(Player):
                 status = ''
         else:
             status = 'folded'
-        return pattern.format(name, stack, bet, status)
 
-    def printPlayerStats(self):
-        print()
-        print('  '+self.fitToLength('NAME', self.nameLen)+' ' +
-              self.fitToLength('STACK', self.valLen)+' '+self.fitToLength('BET', self.valLen))
-        for pl in self.players:
-            print(self.singlePlayerStats(pl))
+        if pl is self.dealer:
+            role = 'D'
+        elif pl is self.smallBlind:
+            role = 's'
+        elif pl is self.bigBlind:
+            role = 'b'
+        else:
+            role = ' '
+
+        if not playing:
+            play = ' '
+        else:
+            play = '>'
+        return pattern.format(name, stack, bet, status, role, play)
 
     def cleanValue(self, value: int, demand: int, minRaiseValue: int):
         bet = min(value, self.bet+self.stack)
@@ -192,3 +209,25 @@ class CLIPlayer(Player):
         print()
         print('help has yet not been fully implemented yet. We are sorry for hte inconvenience')
         print()
+
+    def printChart(self, cur: Player) -> None:
+        # header
+        print('  '+self.fitToLength('NAME', self.nameLen)+' ' +
+              self.fitToLength('STACK', self.valLen)+' '+self.fitToLength('BET', self.valLen))
+        # separator (u2014 is the em dash)
+        print('\u2014'*(2+self.nameLen+3*self.valLen+3))
+        # players
+        for pl in self.players:
+            print(self.singlePlayerStats(pl, pl is cur))
+        print()
+        pattern = 'pocket cards: {0}, community cards: {1}'
+        print(pattern.format(self.myCards, self.comCards))
+
+    def printDisplay(self, cur: Player, display: str):
+        self.printChart(cur)
+        print(display)
+
+    def printDemandRequest(self) -> str:
+        self.printChart(self)
+        inp = input('enter your action: ').strip()
+        return inp

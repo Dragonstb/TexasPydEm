@@ -65,6 +65,9 @@ class UserAgent():
     def notifyEndOfHand(self):
         pass
 
+    def revealAllCards(self, player):
+        pass
+
     # _______________ other _______________
 
     def isHuman(self):

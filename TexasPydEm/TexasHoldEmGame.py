@@ -343,13 +343,13 @@ class TexasHoldEmGame():
 
         # small blind
         player.incBet(self.sb)
-        [spec.notifySmallBlind(player) for spec in self.spectators]
+        [ua.notifySmallBlind(player) for ua in self.uas]
         self.checkBilance(player, False)
 
         # big blind
         player = self.shiftPlayIndex(self.playIdx)
         player.incBet(self.bb)
-        [spec.notifyBigBlind(player) for spec in self.spectators]
+        [ua.notifyBigBlind(player) for ua in self.uas]
         self.checkBilance(player, False)
 
         self.lastToBeAsked = player
@@ -420,8 +420,9 @@ class TexasHoldEmGame():
             return self.evaluatePots()
 
         # showdown
-        # TODO: reveal pocket cards to other players
         # TODO: allow for folding at this point
+        for pl in self.getEligiblePlayers():
+            [ua.revealAllCards(pl) for ua in self.uas]
         return self.evaluatePots()
 
     def continueGame(self):
@@ -453,7 +454,6 @@ class TexasHoldEmGame():
             self.announceWins(wins)
             for pl, win in wins.items():
                 pl.stack += win
-            sleep(0.5)
 
             # eliminate players
             out = list(filter(lambda pl: pl.stack == 0, self.players))
@@ -473,7 +473,7 @@ class TexasHoldEmGame():
             # shift dealer
             self.dealIdx = (self.dealIdx + 1) % len(self.players)
             [ua.notifyEndOfHand() for ua in self.uas]
-            sleep(0.5)
+            sleep(2)
 
         # return winners
         return {pl: pl.stack for pl in self.players}

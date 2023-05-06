@@ -83,7 +83,7 @@ class CLIPlayer(Player):
         display = pattern.format(player.name)
         self.printDisplay(player, display)
 
-    def demandBet(self, demand: int, minRaiseValue) -> int:
+    def demandBet(self, demand: int, minRaiseValue: int, potSize: int) -> int:
         self.printChart(self)
         inp = None
         while inp is None:

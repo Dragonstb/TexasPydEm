@@ -6,6 +6,7 @@ from Players.CLIPlayer import CLIPlayer as CLIP
 from Players.AlwaysCallPlayer import AlwaysCallPlayer as ACP
 from CLISpecUserAgent import CLISpecUserAgent as CLIUA
 from TexasHoldEmGame import TexasHoldEmGame as Game
+from Players.SimpleAIPlayer import SimpleAIPlayer as AIP
 
 inp = None
 while inp is None:
@@ -19,12 +20,12 @@ game = Game()
 player = CLIP(inp)
 game.playersNeeded = [player]
 game.addPlayer(player)
-game.addPlayer(FRP('Brigitte'))
-game.addPlayer(FRP('Alex'))
-game.addPlayer(FRP('Jill'))
-game.addPlayer(FRP('P'))
-game.addPlayer(Player('Kaori'))
-game.addPlayer(Player('Miguel'))
+game.addPlayer(AIP('Brigitte'))
+game.addPlayer(AIP('Alex'))
+game.addPlayer(AIP('Jill'))
+game.addPlayer(AIP('P'))
+game.addPlayer(AIP('Kaori'))
+game.addPlayer(AIP('Miguel'))
 
 wins = game.runGame()
 

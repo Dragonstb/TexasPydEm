@@ -96,7 +96,7 @@ class Player(UserAgent):
             self.bet += self.stack
             self.stack = 0
 
-    def demandBet(self, demand: int, minRaiseValue) -> int:
+    def demandBet(self, demand: int, minRaiseValue: int, potSize: int) -> int:
         """
         The croupier asks the player for an action.
 
@@ -105,6 +105,9 @@ class Player(UserAgent):
 
         minRaiseVale:
         How much the player has to bet in case she/he wanna raise.
+
+        potSize:
+        The current pot size. This is a convenient argument, because players could compute the pot size by themselfs.
 
         return:
         Negative number for folding. Non-negative values is how much the player wants to bet in total now. 'In total'

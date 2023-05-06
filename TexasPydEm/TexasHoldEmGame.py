@@ -28,6 +28,7 @@ class TexasHoldEmGame():
     curBet: int            # current height of bet
     comCards: List[int]    # community cards
     pots: List[Pot]        # pot and split pots
+    potSize: int           # current pot size
     # player last to be asked for action DEPRECATED (unused)
     lastToBeAsked: Player
     # the game exits if all of the players in the list have been eliminated. 'None' deactivates this
@@ -141,7 +142,7 @@ class TexasHoldEmGame():
         if verbose:
             [ua.notifyRaise(player) for ua in self.uas]
 
-    def addToPot(self, players: List[Player], bet: int):
+    def addPlayerToPot(self, players: List[Player], bet: int):
         """
         Adds the given players to the (side) pot created at the given value of 'bet'. If no such pot exists, a new pot
         becomes opened for the players.
@@ -167,7 +168,7 @@ class TexasHoldEmGame():
             alreadyAside[0].eligible += players
 
     def allIn(self, player: Player):
-        self.addToPot([player], player.bet)
+        self.addPlayerToPot([player], player.bet)
         [ua.notifyAllIn(player) for ua in self.uas]
 
     def dealPocketCards(self):
@@ -253,7 +254,7 @@ class TexasHoldEmGame():
         is undefined.
         """
         # add remaining players to highest pot, create thsi pot if necessary
-        self.addToPot(self.getActivePlayers(), self.curBet)
+        self.addPlayerToPot(self.getActivePlayers(), self.curBet)
         # pots on decreasing order of betting value
         self.pots.sort(key=lambda pot: pot.bet, reverse=True)
         # a pivot pot at a betting value of 0, placed at the end of the list
@@ -304,11 +305,13 @@ class TexasHoldEmGame():
             playersBet = max(player.bet, playersBet)
             if playersBet > self.curBet and playersBet < minRaise:
                 playersBet = self.curBet
+
             if playersBet == player.bet:
                 self.check(player)
             else:
                 player.incBet(playersBet - player.bet)
                 self.checkBilance(player)
+                self.potSize = sum([pl.bet for pl in self.players])
 
     def doesIntervalGoOn(self, player: Player) -> bool:
         """
@@ -345,12 +348,14 @@ class TexasHoldEmGame():
         player.incBet(self.sb)
         [ua.notifySmallBlind(player) for ua in self.uas]
         self.checkBilance(player, False)
+        self.potSize += player.bet
 
         # big blind
         player = self.shiftPlayIndex(self.playIdx)
         player.incBet(self.bb)
         [ua.notifyBigBlind(player) for ua in self.uas]
         self.checkBilance(player, False)
+        self.potSize += player.bet
 
         self.lastToBeAsked = player
         self.raiser = None
@@ -380,6 +385,7 @@ class TexasHoldEmGame():
         self.curBet = 0
         self.comCards = []
         self.pots = []
+        self.potSize = 0
         [pl.clearAll() for pl in self.players]
         [ua.notifyBeginOfHand(self.players[self.dealIdx]) for ua in self.uas]
 

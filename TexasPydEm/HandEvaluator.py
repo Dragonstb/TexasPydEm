@@ -1,5 +1,5 @@
 import CardUtils as CU
-from typing import List, Tuple
+from typing import List, Tuple, Set
 
 HIGH = 0
 PAIR = 1
@@ -255,3 +255,77 @@ def _getCardsOfOtherValue(cards: List[int], excludeValues: List[int]) -> List[in
     if len(kickers) > 0:
         kickers.sort(key=lambda card: CU.getCardValue(card), reverse=True)
     return kickers
+
+
+# _______________  outs for draws  _______________
+
+def getStraightOuts(cards: List[int], length: int = 5) -> Set[int]:
+    """
+    Computes the outs of a straight draw. The straight draw is only considered a straight draw if exactly
+    one card is missing to complete the straight.
+
+    cards:
+    The cards the outs are computed for.
+
+    length = 5:
+    Number of cards in sequence needed to complete a straight.
+    """
+    outs = set()
+    freqs = getValueFreqs(cards)
+    # mirror first frequencies to the end for catching round the corner straights
+    extFreqs = freqs + freqs[0:length-1]
+    for startAt in range(len(freqs)):
+        if extFreqs[startAt:startAt+length].count(0) == 1:
+            # exactly one value that does not appear
+            cardValue = extFreqs.index(0, startAt, startAt+length)
+            # TODO: make this agnostic of the card deck used
+            for suit in range(4):
+                # TODO: make this agnostic of the card deck used
+                outs.add(cardValue + suit*13)
+    return outs
+
+
+def getFlushOuts(cards: List[int], length: int = 5) -> Set[int]:
+    """
+    Computes the outs for a flush draw. Only considers draws where exactly one card is missing to complete the draw.
+
+    cards:
+    The hand for that the outs are computed.
+
+    length = 5:
+    Number of cards of a single suit to be present in a hand for completing a flush.
+
+    return:
+    Outs of flush draws where exactly one card is missing.
+    """
+    outs = set()
+    freqs = getSuitFreqs(cards)
+    for suit in range(len(freqs)):
+        if freqs[suit] == length - 1:
+            # TODO: make this agnostic of the card deck used
+            for val in range(13):
+                useVal = suit*13 + val
+                if useVal not in cards:
+                    outs.add(useVal)
+
+    return outs
+
+
+def getStraightFlushOuts(straightOuts: Set[int], flushOuts: Set[int]) -> Set[int]:
+    """
+    Computes the outs for a straight flush, if exactly one card is missing.
+
+    straightOuts:
+    Pre computed outs of a straight draw where exactly one card is missing.
+
+    flushOuts:
+    Pre computed outs of a flush draw where exactly one card is missing.
+
+    return:
+    Outs of a straight flush draw.
+    """
+    outs = set()
+    for strOut in straightOuts:
+        if strOut in flushOuts:
+            outs.add(strOut)
+    return outs

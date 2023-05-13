@@ -472,10 +472,118 @@ class HandEvaluator_UT(UT.TestCase):
         self.assertEqual(
             0, len(outs), 'bogus straight flush outs: '+self.asStr(outs))
 
+    def test_xOfAKindOuts_4draw(self):
+        cards = [3, 16, 27, 42, 49]
+        expect = [29]
+        outs = HE.getXOfAKindOuts(cards, 4)
+        self.assertEqual(len(expect), len(
+            outs), 'incorrect number of X of a kind outs')
+        for out in expect:
+            self.assertTrue(out in outs, 'Missing X of a kind out: ' +
+                            str(out)+', got outs: '+self.asStr(outs))
+
+    def test_xOfAKindOuts_3draw(self):
+        cards = [3, 16, 27, 49]
+        expect = [29, 42]
+        outs = HE.getXOfAKindOuts(cards, 3)
+        self.assertEqual(len(expect), len(
+            outs), 'incorrect number of X of a kind outs')
+        for out in expect:
+            self.assertTrue(out in outs, 'Missing X of a kind out: ' +
+                            str(out)+', got outs: '+self.asStr(outs))
+
+    def test_xOfAKindOuts_two3draws(self):
+        cards = [3, 16, 27, 40]
+        expect = [1, 14, 29, 42]
+        outs = HE.getXOfAKindOuts(cards, 3)
+        self.assertEqual(len(expect), len(
+            outs), 'incorrect number of X of a kindouts')
+        for out in expect:
+            self.assertTrue(out in outs, 'Missing X of a kind out: ' +
+                            str(out)+', got outs: '+self.asStr(outs))
+
+    def test_xOfAKindOuts_no3draws(self):
+        cards = [3, 4, 5, 6, 7, 8]
+        outs = HE.getXOfAKindOuts(cards, 3)
+        self.assertEqual(
+            0, len(outs), 'bogus X of a kind outs: '+self.asStr(outs))
+
+    def test_fullHouseOuts_twoPairs(self):
+        cards = [1, 5, 7, 14, 18]
+        expect = [27, 40, 31, 44]
+        outs = HE.getFullHouseOuts(cards)
+        self.assertEqual(len(expect), len(
+            outs), 'incorrect number of full house outs')
+        for out in expect:
+            self.assertTrue(out in outs, 'Missing full house out: ' +
+                            str(out)+', got outs: '+self.asStr(outs))
+
+    def test_fullHouseOuts_threePairs(self):
+        cards = [1, 5, 7, 14, 18, 20]
+        expect = [27, 40, 31, 44, 33, 46]
+        outs = HE.getFullHouseOuts(cards)
+        self.assertEqual(len(expect), len(
+            outs), 'incorrect number of full house outs')
+        for out in expect:
+            self.assertTrue(out in outs, 'Missing full house out: ' +
+                            str(out)+', got outs: '+self.asStr(outs))
+
+    def test_fullHouseOuts_triplet(self):
+        cards = [1, 5, 7, 14, 27]
+        expect = [18, 31, 44, 20, 33, 46]
+        outs = HE.getFullHouseOuts(cards)
+        self.assertEqual(len(expect), len(
+            outs), 'incorrect number of full house outs')
+        for out in expect:
+            self.assertTrue(out in outs, 'Missing full house out: ' +
+                            str(out)+', got outs: '+self.asStr(outs))
+
+    def test_fullHouseOuts_justOnePair(self):
+        cards = [1, 3, 9, 12, 14]
+        outs = HE.getFullHouseOuts(cards)
+        self.assertEqual(
+            0, len(outs), 'bogus full house outs: '+self.asStr(outs))
+
+    def test_fullHouseOuts_threeTriplets(self):
+        cards = [1, 3, 14, 16, 27, 29]
+        outs = HE.getFullHouseOuts(cards)
+        self.assertEqual(
+            0, len(outs), 'bogus full house outs: '+self.asStr(outs))
+
+    def test_fullHouseOuts_alreadyFullHouse(self):
+        cards = [1, 14, 27, 4, 17]
+        outs = HE.getFullHouseOuts(cards)
+        self.assertEqual(
+            0, len(outs), 'bogus full house outs: '+self.asStr(outs))
+
+    def test_twoPiarOuts_onePairPresent(self):
+        cards = [4, 17, 7, 10, 11]
+        expect = [20, 33, 46, 23, 36, 49, 24, 37, 50]
+        outs = HE.getTwoPairOuts(cards)
+        self.assertEqual(len(expect), len(
+            outs), 'incorrect number of two pair outs')
+        for out in expect:
+            self.assertTrue(out in outs, 'Missing two pair out: ' +
+                            str(out)+', got outs: '+self.asStr(outs))
+
+    def test_twoPairOuts_alreadyTwoPairs(self):
+        cards = [1, 14, 7, 20, 8]
+        outs = HE.getTwoPairOuts(cards)
+        self.assertEqual(
+            0, len(outs), 'bogus two pair outs: '+self.asStr(outs))
+
+    def test_twoPairOuts_justSingles(self):
+        cards = [1, 5, 8, 9, 12]
+        outs = HE.getTwoPairOuts(cards)
+        self.assertEqual(
+            0, len(outs), 'bogus two pair outs: '+self.asStr(outs))
+
     #############
 
     def asStr(self, lst):
-        if len(lst) > 0:
+        if len(lst) > 1:
             return reduce(lambda a, b: str(a)+', '+str(b), lst)
+        elif len(lst) == 1:
+            return str(lst)
         else:
             return '><'

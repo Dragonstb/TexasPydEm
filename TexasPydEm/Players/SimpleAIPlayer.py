@@ -1,6 +1,6 @@
 from Player import Player as Pl
 import CardUtils as CU
-from random import randint
+from random import randint, random
 from typing import List
 from copy import copy
 import HandEvaluator as HE
@@ -33,12 +33,14 @@ class SimpleAIPlayer(Pl):
     _bluffing: int
     # does the AI computes pot odds for making a decision
     _usePotOdds: bool
+    # range of a random added on pot odd calculations. This simulates computational imprecision
 
     def __init__(self, name):
         super().__init__(name)
         self._tightness = randint(-25, 25)
         self._bluffiness = randint(1, 30)
         self._usePotOdds = randint(0, 1) == 1
+        self._calcAccuracy = random() * 0.05
 
     def notifyBeginOfHand(self, dealer):
         self._coms = []
@@ -51,11 +53,11 @@ class SimpleAIPlayer(Pl):
         if len(self._coms) < 3:
             return self._preFlopBet(demand, minRaiseValue)
         elif len(self._coms) == 3:
-            return self._postFlopBet(demand, minRaiseValue)
+            return self._postFlopBet(demand, minRaiseValue, potSize)
         elif len(self._coms) == 4:
-            return self._postFlopBet(demand, minRaiseValue)
+            return self._postFlopBet(demand, minRaiseValue, potSize)
         else:
-            return self._postFlopBet(demand, minRaiseValue)
+            return self._postFlopBet(demand, minRaiseValue, potSize)
 
     # _______________ evaluate pocket cards _______________
 
@@ -85,13 +87,63 @@ class SimpleAIPlayer(Pl):
     # _______________  evaluate post flop hands  _______________
 
     def _postFlopBet(self, demand: int, minRaiseValue: int, potSize: int) -> int:
-        hand = HE.evaluateHand(self.pockets + self._coms)
-        threshold = 13 * hand[0] + hand[1]           # TODO: make deck agnostic
+        cards = self.pockets + self._coms
+        hand = HE.evaluateHand(cards)
+        # threshold by current hand
+        # TODO: make deck agnostic
+        rankThreshold = 13 * hand[0] + hand[1]
+        # threshold by outs
+        outThreshold = 0
+        if self._usePotOdds:
+            outs = self._getOuts(cards, hand[0])
+            improveProp = len(outs) / 52 - len(cards)
+            improveProp += 2 * self._calcAccuracy * random() - self._calcAccuracy
+            improveProp = max(improveProp, 0)
+            potShare = demand / (potSize + demand - self.bet)
+            potShare += 2 * self._calcAccuracy * random() - self._calcAccuracy
+            potShare = max(potShare, 0)
+            if improveProp > potShare:
+                outThreshold = 100
+        # decide
+        threshold = max(rankThreshold, outThreshold)
         dice = randint(0, 13 * HE.STRAIGHFLUSH + 12)
         return self._getBet(demand, minRaiseValue, threshold, dice)
 
-    def _getOuts(self, handRank):
-        pass
+    def _getOuts(self, cards, handRank):
+        """
+        Computes all outs for hands where exactly one card is missing.
+
+        cards:
+        Your hand cards.
+
+        handRank:
+        Rank of the hand.
+
+        return:
+        outs for hands with improbed hand rank.
+        """
+        outs = set()
+        straightOuts = HE.getStraightOuts(cards)
+        flushOuts = HE.getFlushOuts(cards)
+
+        if handRank < HE.STRAIGHFLUSH:
+            outs |= HE.getStraightFlushOuts(straightOuts, flushOuts)
+        if handRank < HE.FOUR_OAK:
+            outs |= HE.getXOfAKindOuts(cards, 4)
+        if handRank < HE.FULLHOUSE:
+            outs |= HE.getFullHouseOuts(cards)
+        if handRank < HE.FLUSH:
+            outs |= flushOuts
+        if handRank < HE.STRAIGHT:
+            outs |= straightOuts
+        if handRank < HE.THREE_OAK:
+            outs |= HE.getXOfAKindOuts(cards, 3)
+        if handRank < HE.TWOPAIR:
+            outs |= HE.getTwoPairOuts(cards)
+        if handRank < HE.PAIR:
+            outs |= HE.getXOfAKindOuts(cards, 2)
+
+        return outs
 
     # _______________  get bet  _______________
 

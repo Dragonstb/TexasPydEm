@@ -329,3 +329,100 @@ def getStraightFlushOuts(straightOuts: Set[int], flushOuts: Set[int]) -> Set[int
         if strOut in flushOuts:
             outs.add(strOut)
     return outs
+
+
+def getXOfAKindOuts(cards: List[int], x: int) -> Set[int]:
+    """
+    Computes the outs for a X of a kind flush, if exactly one card is missing.
+
+    cards:
+    The hand for that the outs are computed.
+
+    x:
+    How many of a kind you wanna compute the outs for. If you are heading for the outs of a four of a kind draw,
+    put 4 here. Needs to be 2 or greater.
+
+    return:
+    Outs of x of a kind draws where exactly one card is missing.
+
+    raises:
+    ValueError of x is less than two.
+    """
+    if x > 1:
+        outs = set()
+        freqs = getValueFreqs(cards)
+        vals = [val for val in range(len(freqs)) if freqs[val] == x-1]
+        for val in vals:
+            # TODO: make this agnostic to the deck of cards used
+            for suit in range(4):
+                useVal = suit*13+val
+                if useVal not in cards:
+                    outs.add(useVal)
+        return outs
+    else:
+        raise ValueError('x must be at least 2')
+
+
+def getTwoPairOuts(cards: List[int]) -> Set[int]:
+    """
+    Computes the outs for a two pair draw, if exactly one card is missing.
+
+    cards:
+    The hand for that the outs are computed.
+
+    return:
+    Outs of two pair draws where exactly one card is missing.
+    """
+    outs = set()
+    freqs = getValueFreqs(cards)
+    pairs = _checkMultiples(freqs, 2)
+    if len(pairs) == 1:
+        singles = [val for val in range(len(freqs)) if freqs[val] == 1]
+        for val in singles:
+            # TODO: make this deck agnostic
+            for suit in range(4):
+                useVal = suit*13+val
+                if useVal not in cards:
+                    outs.add(useVal)
+    # TODO: This implementation misses outs for better two pairs, if two pairs are present. Fix this.
+    return outs
+
+
+def getFullHouseOuts(cards: List[int]) -> Set[int]:
+    """
+    Computes the outs for a X of a kind flush, if exactly one card is missing.
+
+    cards:
+    The hand for that the outs are computed.
+
+    return:
+    Outs of full house draws where exactly one card is missing.
+    """
+    outs = set()
+    freqs = getValueFreqs(cards)
+    pairs = _checkMultiples(freqs, 2)
+    triples = _checkMultiples(freqs, 3)
+
+    # two pairs
+    if len(pairs) > 1 and len(triples) == 0:
+        # two pairs: a card of any pair value would turn the pair to a triplet and fill the house
+        for val in pairs:
+            # TODO: make this deck agnostic
+            for suit in range(4):
+                useVal = suit*13+val
+                if useVal not in cards:
+                    outs.add(useVal)
+
+    # a triplet
+    elif len(pairs) == 0 and len(triples) > 0:
+        # another card of the same value as any single card needed
+        singles = [val for val in range(len(freqs)) if freqs[val] == 1]
+        for val in singles:
+            # TODO: make this deck agnostic
+            for suit in range(4):
+                useVal = suit*13+val
+                if useVal not in cards:
+                    outs.add(useVal)
+
+    # TODO: this implementation misses outs for a better full house if a lesser full house is present. Fix this.
+    return outs

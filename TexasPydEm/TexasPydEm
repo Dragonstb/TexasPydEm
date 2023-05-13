@@ -20,7 +20,7 @@ game = Game()
 player = CLIP(inp)
 game.playersNeeded = [player]
 game.addPlayer(player)
-game.addPlayer(AIP('Brigitte'))
+game.addPlayer(AIP('Bernadette'))
 game.addPlayer(AIP('Alex'))
 game.addPlayer(AIP('Jill'))
 game.addPlayer(AIP('P'))

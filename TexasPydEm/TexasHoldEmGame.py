@@ -296,7 +296,7 @@ class TexasHoldEmGame():
     def playAction(self, player: Player):
         minRaise = self.curBet + self.bb
 
-        playersBet = player.demandBet(self.curBet, minRaise)
+        playersBet = player.demandBet(self.curBet, minRaise, self.potSize)
         if playersBet < 0:
             self.fold(player)
         else:

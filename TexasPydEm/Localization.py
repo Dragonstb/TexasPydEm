@@ -43,6 +43,7 @@ PLAYER_BETS = 'player_bets'
 # player eliminated
 PLAYER_ELIMINATED = 'player_eliminated'
 
+# TODO: improve! It is not very flexible for now, just OK for some first runs and testing all the other stuff
 
 loc_en_UK = {
     INVALID_CARD: 'invalid card',

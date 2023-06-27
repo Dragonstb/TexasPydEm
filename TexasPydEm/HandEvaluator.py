@@ -61,7 +61,7 @@ def evaluateHand(cards: List[int]) -> Tuple[int]:
     flushSuits = _checkFlushes(suitFreqs)
 
     if len(flushSuits) > 0 and len(straightEnds) > 0:
-        sfVal = _checkStraighIsFlush(cards, straightEnds)
+        sfVal = _checkStraightIsFlush(cards, straightEnds)
         if sfVal >= 0:
             combi = (STRAIGHFLUSH, sfVal, -1)
 
@@ -175,14 +175,16 @@ def _checkStraigh(freqs: List[int], length: int = 5) -> List[int]:
     Number of consecutive cards needed to form a straight.
 
     return:
-    values of last card of each straigh, empty list if no straigh is detected.
+    values of last card of each straight, empty list if no straigh is detected.
     """
     vals = []
-    # straigh may start with an ace, so mirror frequencies of 2 to 5 to the end as pivots
+    # straight may start with an ace, so mirror frequencies of 2 to 5 to the end as pivots
     ext = freqs + freqs[0:length-1]
     for val in range(len(freqs)):
-        if ext[val:val+length].count(0) == 0:
-            vals.append((val+length-1) % len(freqs))
+        # exclude round the corners except when starting with an ace
+        if val <= len(freqs) - length or val == len(freqs)-1:
+            if ext[val:val+length].count(0) == 0:
+                vals.append((val+length-1) % len(freqs))
     return vals
 
 
@@ -202,9 +204,9 @@ def _checkFlushes(freqs: List[int], multiplicy: int = 5) -> List[int]:
     return [suit for suit in range(len(freqs)) if freqs[suit] >= multiplicy]
 
 
-def _checkStraighIsFlush(cards: List[int], ends: List[int], length: int = 5) -> int:
+def _checkStraightIsFlush(cards: List[int], ends: List[int], length: int = 5) -> int:
     """
-    Checks is the cards that make up a straigh also form the flush.
+    Checks is the cards that make up a straight also form the flush. Assumes that there is a straight in the hand.
 
     cards:
     The actual cards of the hand.

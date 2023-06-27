@@ -90,7 +90,7 @@ class HandEvaluator_UT(UT.TestCase):
         cards = [1, 2, 3, 4, 7, 9, 10]
         freqs = HE.getValueFreqs(cards)
         strgt = HE._checkStraigh(freqs)
-        self.assertEqual(len(strgt), 0, 'straight detected, \nfreqs is ' +
+        self.assertEqual(len(strgt), 0, 'bogus straight detected, \nfreqs is ' +
                          reduce(lambda a, b: str(a)+', '+str(b), freqs))
 
     def test_checkStraight_oneStr(self):
@@ -102,14 +102,28 @@ class HandEvaluator_UT(UT.TestCase):
         self.assertTrue(
             val in strgt, 'straight does not ends with expected card')
 
-    def test_checkStraight_roundTheCornerStr1(self):
-        val = 2  # value of straight-ending card
-        cards = [val, 1, 0, 6, 12, 11, 9]  # 11, 12, 0, 1, 2 (K to 4)
+    def test_checkStraight_royalStr(self):
+        val = 12  # value of straight-ending card
+        cards = [val, val-1, 1, val-2, 3, val-3, val-4]
         freqs = HE.getValueFreqs(cards)
         strgt = HE._checkStraigh(freqs)
         self.assertEqual(len(strgt), 1, 'straight missed')
         self.assertTrue(
             val in strgt, 'straight does not ends with expected card')
+
+    def test_checkStraight_roundTheCornerStr0(self):
+        cards = [4, 10, 0, 6, 12, 11, 9]  # J to 2
+        freqs = HE.getValueFreqs(cards)
+        strgt = HE._checkStraigh(freqs)
+        self.assertEqual(len(strgt), 0, 'bogus straight detected, \nfreqs is ' +
+                         reduce(lambda a, b: str(a)+', '+str(b), freqs))
+
+    def test_checkStraight_roundTheCornerStr1(self):
+        cards = [2, 1, 0, 6, 12, 11, 9]  # 11, 12, 0, 1, 2 (K to 4)
+        freqs = HE.getValueFreqs(cards)
+        strgt = HE._checkStraigh(freqs)
+        self.assertEqual(len(strgt), 0, 'bogus straight detected, \nfreqs is ' +
+                         reduce(lambda a, b: str(a)+', '+str(b), freqs))
 
     def test_checkStraight_roundTheCornerStr2(self):
         val = 3  # value of straight-ending card
@@ -179,33 +193,27 @@ class HandEvaluator_UT(UT.TestCase):
     def test_checkSF_oneSF(self):
         cards = [27, 28, 14, 29, 30, 31, 50]
         ends = [CU.getCardValue(31)]
-        sf = HE._checkStraighIsFlush(cards, ends)
+        sf = HE._checkStraightIsFlush(cards, ends)
         self.assertTrue(sf in ends, 'sf not detected')
 
     def test_chechSF_twoSFs(self):
         cards = [3, 4, 5, 6, 7, 33, 34, 35, 36, 37]
         ends = [CU.getCardValue(7), CU.getCardValue(37)]
         self.assertNotEqual(ends[0], ends[1], 'badly chosen test values')
-        sf = HE._checkStraighIsFlush(cards, ends)
+        sf = HE._checkStraightIsFlush(cards, ends)
         self.assertEqual(sf, max(ends), 'did not detect highest SF')
 
     def test_checkSF_justStraight(self):
         cards = [27, 28, 14, 16, 30, 31, 50]
         ends = [CU.getCardValue(31)]
-        sf = HE._checkStraighIsFlush(cards, ends)
+        sf = HE._checkStraightIsFlush(cards, ends)
         self.assertEqual(sf, -1, 'false sf detected')
 
     def test_checkSF_justFlush(self):
         cards = [27, 28, 14, 33, 30, 31, 50]
         ends = [CU.getCardValue(31)]
-        sf = HE._checkStraighIsFlush(cards, ends)
+        sf = HE._checkStraightIsFlush(cards, ends)
         self.assertEqual(sf, -1, 'false sf detected')
-
-    def test_checkSF_roundTheCorner(self):
-        cards = [37, 38, 14, 26, 27, 28, 50]
-        ends = [CU.getCardValue(28)]
-        sf = HE._checkStraighIsFlush(cards, ends)
-        self.assertTrue(sf in ends, 'sf not detected')
 
     # ______________ utilities ______________
 

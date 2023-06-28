@@ -17,6 +17,8 @@ while inp is None:
         inp = None
 
 game = Game()
+game.shortSleep = 0.5
+game.longSleep = 2
 player = CLIP(inp)
 game.playersNeeded = [player]
 game.addPlayer(player)

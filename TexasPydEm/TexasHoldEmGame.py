@@ -33,9 +33,15 @@ class TexasHoldEmGame():
     # criterion.
     playersNeeded: List[Player]
     playUntilLeft: int     # at how many players left the game will stop
+    # a short sleeping interval. Useful when human players are participating.
+    shortSleep: float
+    # a long sleeping interval. Useful when human players are participating.
+    longSleep: float
 
     def __init__(self):
         self.state = self.PRE_GAME
+        self.shortSleep = -1
+        self.longSleep = -1
         self.croupier = Croupier()
         self.players = []
         self.spectators = []
@@ -257,7 +263,8 @@ class TexasHoldEmGame():
         """
         self.comCards += self.croupier.drawCards(numCards)
         [ua.notifyCommunityCards(self.comCards) for ua in self.uas]
-        sleep(1)
+        if (self.shortSleep > 0):
+            sleep(2 * self.shortSleep)
 
     def announceWins(self, wins: Dict[Player, int]):
         """
@@ -453,7 +460,8 @@ class TexasHoldEmGame():
                 player.yetUnasked = False  # remove flag
             self.playAction(player)
             player = self.shiftPlayIndex(self.playIdx)
-            sleep(0.5)
+            if (self.shortSleep > 0):
+                sleep(self.shortSleep)
 
     def firstInterval(self):
         """
@@ -525,7 +533,8 @@ class TexasHoldEmGame():
         for pl in self.players:
             pl.notifyCardDealing(pl)
             [spec.notifyCardDealing(pl) for spec in self.spectators]
-        sleep(0.5)
+        if (self.shortSleep > 0):
+            sleep(self.shortSleep)
 
         # first interval
         self.firstInterval()
@@ -534,7 +543,8 @@ class TexasHoldEmGame():
 
         # flop and second interval
         self.dealCommunityCards(3)
-        sleep(0.5)
+        if (self.shortSleep > 0):
+            sleep(self.shortSleep)
         if self.needsPlayingAnInterval():
             self.playFurtherInterval()
         if len(self.getEligiblePlayers()) == 1:
@@ -542,7 +552,8 @@ class TexasHoldEmGame():
 
         # turn and third interval
         self.dealCommunityCards(1)
-        sleep(0.5)
+        if (self.shortSleep > 0):
+            sleep(self.shortSleep)
         if self.needsPlayingAnInterval():
             self.playFurtherInterval()
         if len(self.getEligiblePlayers()) == 1:
@@ -550,7 +561,8 @@ class TexasHoldEmGame():
 
         # river and fourth interval
         self.dealCommunityCards(1)
-        sleep(0.5)
+        if (self.shortSleep > 0):
+            sleep(self.shortSleep)
         if self.needsPlayingAnInterval():
             self.playFurtherInterval()
         if len(self.getEligiblePlayers()) == 1:
@@ -622,7 +634,8 @@ class TexasHoldEmGame():
             # shift dealer
             self.dealIdx = (self.dealIdx + 1) % len(self.players)
             [ua.notifyEndOfHand() for ua in self.uas]
-            sleep(2)
+            if (self.longSleep > 0):
+                sleep(self.longSleep)
 
         # return winners
         return {pl: pl.stack for pl in self.players}

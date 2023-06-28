@@ -50,6 +50,17 @@ def getSuitFreqs(cards: List[int]) -> List[int]:
 
 # return: hand value, combination value, kicker values
 def evaluateHand(cards: List[int]) -> Tuple[int]:
+    """
+    Evaluates the rank of a hand.
+
+    cards:
+    The cards to be evaluated.
+
+    return:
+    A tuple where the first entry is the rank. Each further entry represents the rank on
+    a less important criteria (pairs of tens or pairs of sevens?) with decreasing significance
+    (ending with the rank of kickers)
+    """
     flushLength = 5
     straighLength = 5
     valFreqs = getValueFreqs(cards)

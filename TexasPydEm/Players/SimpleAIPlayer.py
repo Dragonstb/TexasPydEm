@@ -7,6 +7,9 @@ import HandEvaluator as HE
 
 
 class SimpleAIPlayer(Pl):
+
+    # estimate of the strength of any pair of pocket cards. Upper right half are suitaed cards and
+    # lower right are off-suited cards
     _pocketStrength = [
         [100, 100,  90,  90,  80,  60,  60,  60,  60,  60,  60,  60,  60],  # A
         [90, 100,  90,  80,  70,  50,  40,  40,  40,  40,  40,  40,  40],   # K
@@ -33,7 +36,8 @@ class SimpleAIPlayer(Pl):
     _bluffing: int
     # does the AI computes pot odds for making a decision
     _usePotOdds: bool
-    # range of a random added on pot odd calculations. This simulates computational imprecision
+    # range of a random that becomes added to pot odd calculations. This simulates computational imprecision
+    _calcAccuracy: float
 
     def __init__(self, name):
         super().__init__(name)

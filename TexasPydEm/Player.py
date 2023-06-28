@@ -90,6 +90,14 @@ class Player(UserAgent):
         self.__status = Player._ACTIVE
 
     def incBet(self, value: int):
+        """
+        Increases this player's stakes by 'value' and decreases the player's stack by the same amount. If the stack is
+        lower than the argument, the transfer from stack to stakes is limited to the stack size.
+
+        value:
+        Number of chips to become at stakes now. Passing a negative number indeed "unbets" the chips and puts them back
+        to the player's stack. Thsi could lead to a negative bet.
+        """
         self.bet += value
         self.stack -= value
         if (self.stack < 0):
